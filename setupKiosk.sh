@@ -61,9 +61,12 @@ sed -i 's/"exited_cleanly":false/"exited_cleanly":true; s/"exit_type":"[^"]\+"/"
 chromium-browser --disable-infobars --kiosk '$KIOSKURL'
 EOF
 
-#Create .bash_profile
-rm /home/pi/.bash_profile
+#Remove .bash_profile if it exists
+if [ -f /home/pi/.bash_profile ]; then
+	rm /home/pi/.bash_profile
+fi
 
+#Create the .bash_profile
 cat <<EOT >> /home/pi/.bash_profile
 [[ -z \$DISPLAY && \$XDG_VTNR -eq 1 ]] && startx -- -nocursor
 EOT
