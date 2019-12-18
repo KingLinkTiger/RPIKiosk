@@ -35,7 +35,7 @@ sudo apt-get update
 sudo apt-get -y upgrade
 
 #Install all of the needed apps
-sudo apt-get -y install --no-install-recommends xserver-xord x11-xserver-utils xinit openbox chromium-browser fbi
+sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils xinit openbox chromium-browser fbi
 
 #Configure Openbox autostart
 	#Remove default autostart file
