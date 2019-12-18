@@ -18,12 +18,6 @@ layout=us
 #Change pi Password
 echo -e "$PIPASSWORD\n$PIPASSWORD" | sudo passwd pi
 
-#Set system Local to US and UTF-8 Encoding
-sudo raspi-config nonint do_change_locale $locale
-
-#Set keyboard layout to US
-sudo raspi-config nonint do_configure_keyboard $layout
-
 #Set boot behavior to automatically log in as pi
 sudo raspi-config nonint do_boot_behaviour "B2"
 
@@ -130,6 +124,12 @@ fi
 
 #Enable the splash screen service
 systemctl enable splashscreen
+
+#Set system Local to US and UTF-8 Encoding
+sudo raspi-config nonint do_change_locale $locale
+
+#Set keyboard layout to US
+sudo raspi-config nonint do_configure_keyboard $layout
 
 #DONE. Reboot the system
 reboot now
