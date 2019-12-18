@@ -73,7 +73,7 @@ then
 	
 else
 	#Disable Splash does not exist in file. Add it to the end.
-	echo "disable_splash=1" >> /boot/config.txt
+	sudo sh -c 'echo "disable_splash=1" >> /boot/config.txt'
 fi
 
 
