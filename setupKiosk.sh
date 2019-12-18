@@ -1,5 +1,15 @@
 #!/bin/bash
 
+#
+# How to run: wget -O - "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/master/setupKiosk.sh" | bash
+# On EN GB Keyboard:
+#	- Right Alt + Shift + ~ Key = |
+#	- Shift + 2 = “
+#
+#	Intall Time: Roughly 22 Minuites
+#
+
+
 #Variables
 SPLASHIMAGEURL="https://www.firstinspires.org/sites/default/files/uploads/resource_library/brand/first-rise/wallpaper/FIRST-RISE-wallpaper-night-programs-desktop.jpg"
 PIPASSWORD=MDFTC
