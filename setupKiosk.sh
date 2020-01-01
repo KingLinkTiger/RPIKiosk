@@ -47,6 +47,11 @@ sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils x
 		sudo rm /etc/xdg/openbox/autostart
 	fi
 	
+	# Create the openbox folder if it does not exist
+	if [ ! -f /etc/xdg/openbox ]; then
+		sudo mkdir /etc/xdg/openbox
+	fi
+	
 	#Create a new autostart with the information we want
 
 	sudo sh -c 'cat > /etc/xdg/openbox/autostart' << EOF
