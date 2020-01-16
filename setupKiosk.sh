@@ -20,6 +20,7 @@ KIOSKURL="http://192.168.1.25/login"
 #Optional Variables
 locale=en_US.UTF-8
 layout=us
+timezone='US/Eastern'
 
 #--------------------------------------------
 #SCRIPT BELOW
@@ -139,6 +140,9 @@ fi
 
 #Enable the splash screen service
 systemctl enable splashscreen
+
+#Set system TimeZone to user supplied
+sudo raspi-config nonint do_change_timezone $timezone
 
 #Set system Local to US and UTF-8 Encoding
 sudo raspi-config nonint do_change_locale $locale
