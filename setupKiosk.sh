@@ -35,6 +35,9 @@ sudo raspi-config nonint do_boot_behaviour "B2"
 #Set audio to force output to 3.5mm jack
 sudo raspi-config nonint do_audio "1"
 
+#Set output volume to 100%
+amixer set PCM -- 100%
+
 #Apt-get update and upgrade
 sudo apt-get update
 sudo apt-get -y upgrade
