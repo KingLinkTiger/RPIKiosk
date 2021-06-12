@@ -15,7 +15,7 @@ SPLASHIMAGEURL="https://info.firstinspires.org/hubfs/2022%20Season%20Assets/free
 PIPASSWORD=MTI
 ROOTPASSWORD=MTI
 
-KIOSKURL="http://192.168.1.25/login"
+KIOSKURL="http://192.168.17.25/login"
 
 #Optional Variables
 locale=en_US.UTF-8
