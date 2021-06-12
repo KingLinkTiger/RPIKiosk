@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# How to run: wget -O - "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/master/setupKiosk.sh" | bash
+# How to run: wget -O - "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/MTI/setupKiosk.sh" | bash
 # On EN GB Keyboard:
 #	- Right Alt + Shift + ~ Key = |
 #	- Shift + 2 = “
