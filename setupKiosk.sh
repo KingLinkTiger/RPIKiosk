@@ -156,7 +156,7 @@ sudo raspi-config nonint do_change_locale $locale
 sudo raspi-config nonint do_configure_keyboard $layout
 
 #Set Resolution
-sudo raspi-config nonint do_resolution $resolutionGroup $resolutionMode
+#sudo raspi-config nonint do_resolution $resolutionGroup $resolutionMode
 
 #DONE. Reboot the system
 reboot now
