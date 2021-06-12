@@ -11,7 +11,7 @@
 
 
 #Variables
-SPLASHIMAGEURL="https://lh6.googleusercontent.com/BLkziXQh2DtuaiAwqGb1VKrw4MdUigkCpj081RgYObzNi0bKW7q0jX3Jj1Uk4uTf99VYyMQ_5NJf0kjcyANkIlLS0NJwnKYuqY9eYJfgMNOQOa8m=w1280"
+SPLASHIMAGEURL="https://info.firstinspires.org/hubfs/2022%20Season%20Assets/free-season-assets/first%20forward/firstforward-wallpaper-desktop-3.png"
 PIPASSWORD=MTI
 ROOTPASSWORD=MTI
 
