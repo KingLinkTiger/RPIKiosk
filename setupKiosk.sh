@@ -31,12 +31,6 @@ resolutionMode=82
 #Change pi Password
 echo -e "$PIPASSWORD\n$PIPASSWORD" | sudo passwd pi
 
-#Set boot behavior to automatically log in as pi
-sudo raspi-config nonint do_boot_behaviour "B2"
-
-#Set audio to force output to 3.5mm jack
-sudo raspi-config nonint do_audio "1"
-
 #Set output volume to 100%
 amixer set PCM -- 100%
 
@@ -156,7 +150,13 @@ sudo raspi-config nonint do_change_locale $locale
 sudo raspi-config nonint do_configure_keyboard $layout
 
 #Set Resolution
-#sudo raspi-config nonint do_resolution $resolutionGroup $resolutionMode
+sudo raspi-config nonint do_resolution $resolutionGroup $resolutionMode
+
+#Set boot behavior to automatically log in as pi
+sudo raspi-config nonint do_boot_behaviour "B2"
+
+#Set audio to force output to 3.5mm jack
+sudo raspi-config nonint do_audio "1"
 
 #DONE. Reboot the system
 reboot now
