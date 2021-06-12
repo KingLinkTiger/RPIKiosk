@@ -11,9 +11,9 @@
 
 
 #Variables
-SPLASHIMAGEURL="https://www.firstinspires.org/sites/default/files/uploads/resource_library/brand/first-rise/wallpaper/FIRST-RISE-wallpaper-night-programs-desktop.jpg"
-PIPASSWORD=MDFTC
-ROOTPASSWORD=MDFTC
+SPLASHIMAGEURL="https://lh6.googleusercontent.com/BLkziXQh2DtuaiAwqGb1VKrw4MdUigkCpj081RgYObzNi0bKW7q0jX3Jj1Uk4uTf99VYyMQ_5NJf0kjcyANkIlLS0NJwnKYuqY9eYJfgMNOQOa8m=w1280"
+PIPASSWORD=MTI
+ROOTPASSWORD=MTI
 
 KIOSKURL="http://192.168.1.25/login"
 
@@ -21,6 +21,8 @@ KIOSKURL="http://192.168.1.25/login"
 locale=en_US.UTF-8
 layout=us
 timezone='US/Eastern'
+resolutionGroup=2
+resolutionMode=82
 
 #--------------------------------------------
 #SCRIPT BELOW
@@ -152,6 +154,9 @@ sudo raspi-config nonint do_change_locale $locale
 
 #Set keyboard layout to US
 sudo raspi-config nonint do_configure_keyboard $layout
+
+#Set Resolution
+sudo raspi-config nonint do_resolution $resolutionGroup $resolutionMode
 
 #DONE. Reboot the system
 reboot now
