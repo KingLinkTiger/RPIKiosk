@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# How to run: wget -O - "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/master/setupKiosk.sh" | bash
+# How to run: wget -O - "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/setupKiosk.sh" | bash
 # On EN GB Keyboard:
 #	- Right Alt + Shift + ~ Key = |
 #	- Shift + 2 = “
@@ -11,11 +11,11 @@
 
 
 #Variables
-SPLASHIMAGEURL="https://www.firstinspires.org/sites/default/files/uploads/resource_library/brand/first-rise/wallpaper/FIRST-RISE-wallpaper-night-programs-desktop.jpg"
-PIPASSWORD=MDFTC
-ROOTPASSWORD=MDFTC
+SPLASHIMAGEURL="https://info.firstinspires.org/hubfs/2022%20Season%20Assets/free-season-assets/first%20forward/firstforward-wallpaper-desktop-3.png"
+PIPASSWORD=mushroom
+ROOTPASSWORD=mushroom
 
-KIOSKURL="http://192.168.1.25/login"
+KIOSKURL="http://events.firstchesapeake.org:9780/login/"
 
 #Optional Variables
 locale=en_US.UTF-8
