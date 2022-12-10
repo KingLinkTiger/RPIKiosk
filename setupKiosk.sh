@@ -11,11 +11,11 @@
 
 
 #Variables
-SPLASHIMAGEURL="https://info.firstinspires.org/hubfs/2022%20Season%20Assets/free-season-assets/first%20forward/firstforward-wallpaper-desktop-3.png"
+SPLASHIMAGEURL="https://info.firstinspires.org/hubfs/2023%20Season/2023%20season%20assets/first-energize-assets/firstenergize-wallpaper-desktop-1.png"
 PIPASSWORD=mushroom
 ROOTPASSWORD=mushroom
 
-KIOSKURL="http://events.firstchesapeake.org:9780/login/"
+KIOSKURL="http://192.168.1.101"
 
 #Optional Variables
 locale=en_US.UTF-8
