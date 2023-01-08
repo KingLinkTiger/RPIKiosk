@@ -254,10 +254,6 @@ then
 	sudo sed -i 's/$/ logo.nologo consoleblank=0 quiet/' /boot/cmdline.txt
 fi
 
-
-#Set Root's password
-echo -e "$ROOTPASSWORD\n$ROOTPASSWORD" | sudo passwd root
-
 #Touch Root ENV file
 	if [ -f /home/pi/.config/openbox/environment ]; then
 		sudo rm /home/pi/.config/openbox/environment
@@ -267,14 +263,17 @@ echo -e "$ROOTPASSWORD\n$ROOTPASSWORD" | sudo passwd root
         mkdir "/home/pi/.config/openbox"
     fi
 
-cat << EOT > /home/pi/.config/openbox/environment
+cat > /home/pi/.config/openbox/environment << 'EOF'
 export FTCEVENTSERVER_EVENTCODE=""
 export FTCEVENTSERVER_IP="192.168.1.101"
 expoprt KIOSKURL=""
-EOT
+EOF
 
 #Copy the error.html to /home/pi
 sudo wget -O /home/pi/error.html "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/error.html"
+
+#Set Root's password
+echo -e "$ROOTPASSWORD\n$ROOTPASSWORD" | sudo passwd root
 
 #---------------------------------------------------
 #THE REST OF THE COMMANDS NEED TO BE DONE AS ROOT
