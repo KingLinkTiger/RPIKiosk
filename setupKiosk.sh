@@ -273,6 +273,9 @@ export FTCEVENTSERVER_IP="192.168.1.101"
 expoprt KIOSKURL=""
 EOT
 
+#Copy the error.html to /home/pi
+sudo wget -O /home/pi/error.html "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/error.html"
+
 #---------------------------------------------------
 #THE REST OF THE COMMANDS NEED TO BE DONE AS ROOT
 #---------------------------------------------------
