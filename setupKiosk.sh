@@ -66,19 +66,18 @@ sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils x
 
 #Configure Openbox autostart
 	#Remove default autostart file
-	if [ -f /etc/xdg/openbox/autostart ]; then
+	if [ sudo test -f /etc/xdg/openbox/autostart ]; then
 		sudo rm /etc/xdg/openbox/autostart
 	fi
 	
 	# Create the openbox folder if it does not exist
-	if [ ! -f /etc/xdg/openbox ]; then
+	if [ ! sudo test -f /etc/xdg/openbox ]; then
 		sudo mkdir /etc/xdg/openbox
 	fi
 	
 	#Create a new autostart with the information we want
 
-	#sudo sh -c 'cat > /etc/xdg/openbox/autostart' << EOF
-cat << 'EOF' | sudo tee -a /etc/xdg/openbox/autostart
+	sudo sh -c 'cat > /etc/xdg/openbox/autostart' << 'EOF'
 #cat <<EOT >>/home/pi/test.txt
 #Disable any form of screen saver / screen blanking / power management
 xset s off
@@ -234,9 +233,9 @@ if [ -f /home/pi/.bash_profile ]; then
 fi
 
 #Create the .bash_profile
-cat << 'EOF' >> /home/pi/.bash_profile
+cat <<EOT >> /home/pi/.bash_profile
 [[ -z \$DISPLAY && \$XDG_VTNR -eq 1 ]] && startx -- -nocursor
-EOF
+EOT
 
 if grep -Fq "disable_splash" /boot/config.txt
 then
@@ -268,14 +267,11 @@ echo -e "$ROOTPASSWORD\n$ROOTPASSWORD" | sudo passwd root
         mkdir "/home/pi/.config/openbox"
     fi
 
-cat << 'EOF' >> /home/pi/.config/openbox/environment
+cat << EOT > /home/pi/.config/openbox/environment
 export FTCEVENTSERVER_EVENTCODE=""
 export FTCEVENTSERVER_IP="192.168.1.101"
 expoprt KIOSKURL=""
-EOF
-
-#Copy the error.html to /home/pi
-sudo wget -O /home/pi/error.html "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/error.html"
+EOT
 
 #---------------------------------------------------
 #THE REST OF THE COMMANDS NEED TO BE DONE AS ROOT
