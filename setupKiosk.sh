@@ -78,7 +78,7 @@ sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils x
 	#Create a new autostart with the information we want
 
 	sudo sh -c 'cat > /etc/xdg/openbox/autostart' << EOF
-#cat <<EOT >>/home/pi/test.txt
+    #cat <<EOT >>/home/pi/test.txt
 #Disable any form of screen saver / screen blanking / power management
 xset s off
 xset s noblank
@@ -272,6 +272,9 @@ export FTCEVENTSERVER_EVENTCODE=""
 export FTCEVENTSERVER_IP="192.168.1.101"
 expoprt KIOSKURL=""
 EOT
+
+#Copy the error.html to /home/pi
+wget -O /home/pi/error.html "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/error.html"
 
 #---------------------------------------------------
 #THE REST OF THE COMMANDS NEED TO BE DONE AS ROOT
