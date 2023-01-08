@@ -214,9 +214,9 @@ if [ -f /home/pi/.bash_profile ]; then
 fi
 
 #Create the .bash_profile
-cat <<EOT >> /home/pi/.bash_profile
+cat << 'EOF' >> /home/pi/.bash_profile
 [[ -z \$DISPLAY && \$XDG_VTNR -eq 1 ]] && startx -- -nocursor
-EOT
+EOF
 
 if grep -Fq "disable_splash" /boot/config.txt
 then
@@ -248,11 +248,11 @@ echo -e "$ROOTPASSWORD\n$ROOTPASSWORD" | sudo passwd root
         mkdir "/home/pi/.config/openbox"
     fi
 
-cat <<EOT >> /home/pi/.config/openbox/environment
+cat << 'EOF' >> /home/pi/.config/openbox/environment
 export FTCEVENTSERVER_EVENTCODE=""
 export FTCEVENTSERVER_IP="192.168.1.101"
 expoprt KIOSKURL=""
-EOT
+EOF
 
 #Copy the error.html to /home/pi
 sudo wget -O /home/pi/error.html "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/error.html"
