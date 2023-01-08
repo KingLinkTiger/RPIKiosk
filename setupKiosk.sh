@@ -77,8 +77,9 @@ sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils x
 	
 	#Create a new autostart with the information we want
 
-	sudo sh -c 'cat > /etc/xdg/openbox/autostart' << EOF
-    #cat <<EOT >>/home/pi/test.txt
+	#sudo sh -c 'cat > /etc/xdg/openbox/autostart' << EOF
+cat << 'EOF' > /etc/xdg/openbox/autostart
+#cat <<EOT >>/home/pi/test.txt
 #Disable any form of screen saver / screen blanking / power management
 xset s off
 xset s noblank
@@ -98,7 +99,7 @@ fi
 
 # Check if the provided FTC Server is online! If not write an error to the screen and exit!
 if [ $(nc -z -w3 $FTCEVENTSERVER_IP 80; echo $?) -ne 0 ]; then
-	echo "ERROR: FTC Server ${FTCEVENTSERVER_IP} is NOT online! Please check if the IP is correct or if the server is online/accessible."
+    echo "ERROR: FTC Server ${FTCEVENTSERVER_IP} is NOT online! Please check if the IP is correct or if the server is online/accessible."
     sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>FTC Server '"${FTCEVENTSERVER_IP}"' is NOT online! Please check if the IP is correct or if the server is online\/accessible.<\/ERRORCODE>/g' /home/pi/error.html
     KIOSKURL="file:///home/pi/error.html"
     chromium-browser --disable-infobars --kiosk "$KIOSKURL"
@@ -184,7 +185,7 @@ if [ -z "$KIOSKURL" ] ; then
             FIELDNUMBER=3
         elif [ $FIELD4 -eq 1 ] ; then
             FIELDNUMBER=4
-		fi
+        fi
 
         # If the field we have selected is higher than the number of fields we have error out!
         if [ $FIELDNUMBER -gt $numFTCEVENTSERVERFIELDS ] ; then
@@ -199,7 +200,7 @@ if [ -z "$KIOSKURL" ] ; then
         else
             KIOSKURL="http://${FTCEVENTSERVER_IP}/event/${FTCEVENTSERVER_EVENTCODE}/display/?type=field&bindToField=${FIELDNUMBER}&scoringBarLocation=bottom&allianceOrientation=standard&liveScores=true&mute=true&muteRandomizationResults=false&fieldStyleTimer=true&overlay=false&overlayColor=%2300FF00&allianceSelectionStyle=classic&awardsStyle=overlay&previewStyle=overlay&randomStyle=overlay&dualDivisionRankingStyle=sideBySide&rankingsFontSize=larger&rankingsShowQR=false&showMeetRankings=false&rankingsAllTeams=true"
         fi
-	else
+    else
         if [ $MODE_PIT -eq 1 ] ; then
             KIOSKURL="http://${FTCEVENTSERVER_IP}/event/${FTCEVENTSERVER_EVENTCODE}/display/?type=pit&bindToField=all&scoringBarLocation=bottom&allianceOrientation=standard&liveScores=true&mute=false&muteRandomizationResults=false&fieldStyleTimer=false&overlay=false&overlayColor=%2300FF00&allianceSelectionStyle=classic&awardsStyle=overlay&previewStyle=overlay&randomStyle=overlay&dualDivisionRankingStyle=sideBySide&rankingsFontSize=larger&rankingsShowQR=true&showMeetRankings=false&rankingsAllTeams=true"
         elif [ $MODE_INSPECTIONS -eq 1 ] ; then
@@ -207,7 +208,7 @@ if [ -z "$KIOSKURL" ] ; then
         elif [ $MODE_AUDIANCE -eq 1 ] ; then
             KIOSKURL="http://${FTCEVENTSERVER_IP}/event/${FTCEVENTSERVER_EVENTCODE}/display/?type=audience&bindToField=all&scoringBarLocation=bottom&allianceOrientation=standard&liveScores=true&mute=true&muteRandomizationResults=false&fieldStyleTimer=false&overlay=false&overlayColor=%2300FF00&allianceSelectionStyle=classic&awardsStyle=overlay&previewStyle=overlay&randomStyle=overlay&dualDivisionRankingStyle=sideBySide&rankingsFontSize=larger&rankingsShowQR=false&showMeetRankings=false&rankingsAllTeams=true"
         fi
-	fi
+    fi
 fi
 
 
