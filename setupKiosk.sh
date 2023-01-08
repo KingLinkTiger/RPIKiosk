@@ -44,6 +44,26 @@ timezone='US/Eastern'
 #SCRIPT BELOW
 #--------------------------------------------
 
+#Change pi Password
+echo -e "$PIPASSWORD\n$PIPASSWORD" | sudo passwd pi
+
+#Set boot behavior to automatically log in as pi
+sudo raspi-config nonint do_boot_behaviour "B2"
+
+#Set audio to force output to 3.5mm jack
+sudo raspi-config nonint do_audio "1"
+
+#Set output volume to 100%
+amixer set PCM -- 100%
+
+#Apt-get update and upgrade
+sudo apt-get update
+sudo apt-get -y upgrade
+
+#Install all of the needed apps
+#17DEC22 - Added jq requirement
+sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils xinit openbox chromium-browser fbi jq
+
 #Configure Openbox autostart
 	#Remove default autostart file
 	if [ -f /etc/xdg/openbox/autostart ]; then
