@@ -1,14 +1,14 @@
 #region AutoUpdate
+#Source https://stackoverflow.com/questions/59727780/self-updating-bash-script-from-github
 
-SCRIPT="$(readlink -f "$0")"
-SCRIPTFILE="$(basename "$SCRIPT")"             # get name of the file (not full path)
-SCRIPTPATH="$(dirname "$SCRIPT")"
-SCRIPTNAME="$0"
+SCRIPTFILE="autostart"             # get name of the file (not full path)
+GITPATH="/home/pi/RPIKiosk"
+SCRIPTNAME="autostart"
 ARGS=( "$@" )                                  # fixed to make array of args (see below)
 BRANCH="CHS"
 
 self_update() {
-    cd "$SCRIPTPATH"
+    cd "$GITPATH"
     git fetch
 
     # in the next line
