@@ -1,0 +1,247 @@
+#region AutoUpdate
+
+SCRIPT="$(readlink -f "$0")"
+SCRIPTFILE="$(basename "$SCRIPT")"             # get name of the file (not full path)
+SCRIPTPATH="$(dirname "$SCRIPT")"
+SCRIPTNAME="$0"
+ARGS=( "$@" )                                  # fixed to make array of args (see below)
+BRANCH="CHS"
+
+self_update() {
+    cd "$SCRIPTPATH"
+    git fetch
+
+    # in the next line
+    # 1. added double-quotes (see below)
+    # 2. removed grep expression so
+    # git-diff will check only script
+    # file
+    [ -n "$(git diff --name-only "origin/$BRANCH" "$SCRIPTFILE")" ] && {
+        echo "Found a new version of me, updating myself..."
+        git pull --force
+        git checkout "$BRANCH"
+        git pull --force
+
+        #Overwrite error.html in case there was an update
+        cp -rf error.html /home/pi/error.html
+
+        echo "Running the new version..."
+        cd -                                   # return to original working dir
+        exec "$SCRIPTNAME" "${ARGS[@]}"
+
+        # Now exit this old instance
+        exit 1
+    }
+    echo "Already the latest version."
+}
+
+#run the Self Update
+self_update
+
+#endregion
+
+#cat <<EOT >>/home/pi/test.txt
+#Disable any form of screen saver / screen blanking / power management
+xset s off
+xset s noblank
+xset -dpms
+
+#Allow quitting the X server which CTRL-ALT-BACKSPACE
+setxkbmap -option terminate:ctrl_alt_bksp
+
+#Start Chromium in kiosk mode
+cat /home/pi/.config/chromium/'Local State' | jq '.user_experience_metrics.stability.exited_cleanly = false' > /home/pi/.config/chromium/tmp_localState && mv /home/pi/.config/chromium/tmp_localState /home/pi/.config/chromium/'Local State'
+#sed -i 's/"exited_cleanly":false/"exited_cleanly":true' /home/pi/.config/chromium/'Local State'
+#sed -i 's/"exited_cleanly":false/"exited_cleanly":true; s/"exit_type":"[^"]\+"/"exit_type":"Normal"/' ~/.config/chromium/Default/Preferences
+
+if [ -z "$FTCEVENTSERVER_IP" ] ; then
+    FTCEVENTSERVER_IP="192.168.1.101"
+fi
+
+# Wait for etho0 or wlan0 to go to upstate for ~50 seconds
+for i in {1..25}
+do
+    if [ "$(cat /sys/class/net/eth0/operstate)" = "up" ] ; then
+            # If eth0 goes up
+            break
+    elif  [ "$(cat /sys/class/net/wlan0/operstate)" = "up" ] ; then
+            # If wlan0 goes up
+            break
+    fi
+
+    # Otherwise sleep
+    echo "[Waiting Adapter] Attempt $i"
+    sleep 2
+
+    if [ $i -ge 25 ] ; then
+        echo "ERROR: System failed to have eth0 or wlan0 go to up state."
+        sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>System failed to have eth0 or wlan0 go to up state. Please check cable and/or WiFi config.<\/ERRORCODE>/g' /home/pi/error.html
+        KIOSKURL="file:///home/pi/error.html"
+        chromium-browser --disable-infobars --kiosk "$KIOSKURL"
+        exit 1;
+    fi
+done
+
+# Wait to receive an IP address for ~50 seconds
+for i in {1..25}
+do
+    if ! [ "$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')" == "" ] ; then
+            # If we have an IP address break
+            break
+    fi
+
+    # Otherwise sleep
+    echo "[Waiting IP] Attempt $i"
+    sleep 2
+
+    if [ $i -ge 25 ] ; then
+        echo "ERROR: Failed to recieve IP address."
+        sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>System failed to receive IP address in reasonable time (~50 seconds).<\/ERRORCODE>/g' /home/pi/error.html
+        KIOSKURL="file:///home/pi/error.html"
+        chromium-browser --disable-infobars --kiosk "$KIOSKURL"
+        exit 1;
+    fi
+done
+
+ipAddr="$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')"
+gatewayAddr="$(route -n | grep 'UG[ \t]' | awk '{print $2}')"
+
+# Check if we can access out gateway address on port 80
+if [ $(nc -z -w3 $gatewayAddr 80; echo $?) -ne 0 ]; then
+        #If not bail and provide error
+        echo "Unable to connect to gateway!"
+fi
+
+# Proceed
+# We have a gateway address and were able to connect to it.
+echo "Able to connect to gateway, proceeding!"
+
+# Check if the provided FTC Server is online! If not write an error to the screen and exit!
+if [ $(nc -z -w3 $FTCEVENTSERVER_IP 80; echo $?) -ne 0 ]; then
+    echo "ERROR: FTC Server ${FTCEVENTSERVER_IP} is NOT online! Please check if the IP is correct or if the server is online/accessible."
+    sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>FTC Server '"${FTCEVENTSERVER_IP}"' is NOT online! Please check if the IP is correct or if the server is online\/accessible.<\/ERRORCODE>/g' /home/pi/error.html
+    KIOSKURL="file:///home/pi/error.html"
+    chromium-browser --disable-infobars --kiosk "$KIOSKURL"
+    exit 1;
+fi
+
+if [ -z "$FTCEVENTSERVER_EVENTCODE" ] ; then
+    FTCEVENTSERVER_EVENTS=$(curl -s -L -X GET http://${FTCEVENTSERVER_IP}/api/v1/events)
+
+    numFTCEVENTSERVER_EVENTS=$(echo $FTCEVENTSERVER_EVENTS | jq -r ".eventCodes" | jq length)
+
+    if [ $numFTCEVENTSERVER_EVENTS -eq 1 ] ; then
+        FTCEVENTSERVER_EVENTCODE=$(echo $FTCEVENTSERVER_EVENTS | jq -r ".eventCodes[]")
+    else 
+        KIOSKURL="http://${FTCEVENTSERVER_IP}/"
+    fi
+fi
+
+#Get the number of fields for this event
+numFTCEVENTSERVERFIELDS=$(curl -s -L -X GET http://${FTCEVENTSERVER_IP}/api/v1/events/${FTCEVENTSERVER_EVENTCODE}/matches/ | jq '([ .[][].field ] | max)')
+
+if [ -z "$KIOSKURL" ] ; then
+    # Pin Setup
+    # https://learn.sparkfun.com/tutorials/raspberry-gpio/gpio-pinout
+    #
+    # MODE Pins
+    # PIN 32/12 - FIELD Display
+    # PIN 36/16 - PIT DISPLAY
+    # PIN 38/20 - INSPECTIONS DISPLAY
+    # PIN 40/21 - AUDIANCE DISPLAY
+    #
+    # FIELD Pins
+    # PIN 21/6 = FIELD 1
+    # PIN 33/13 = FIELD 2
+    # PIN 35/19 = FIELD 3
+    # PIN 37/26 = FIELD 4
+    #
+
+    raspi-gpio set 12 ip pd
+    raspi-gpio set 16 ip pd
+    raspi-gpio set 20 ip pd
+    raspi-gpio set 21 ip pd
+
+    raspi-gpio set 6 ip pd
+    raspi-gpio set 13 ip pd
+    raspi-gpio set 19 ip pd
+    raspi-gpio set 26 ip pd
+
+    MODE_FIELD=$(raspi-gpio get 12 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    MODE_PIT=$(raspi-gpio get 16 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    MODE_INSPECTIONS=$(raspi-gpio get 20 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    MODE_AUDIANCE=$(raspi-gpio get 21 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+
+    FIELD1=$(raspi-gpio get 6 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    FIELD2=$(raspi-gpio get 13 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    FIELD3=$(raspi-gpio get 19 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    FIELD4=$(raspi-gpio get 26 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    
+
+    if [ $(($MODE_FIELD + $MODE_PIT + $MODE_INSPECTIONS + $MODE_AUDIANCE)) -eq 0 ]; then
+        echo "ERROR: No mode selected! Please verify then reboot."
+        sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>No mode selected! Please verify then reboot.<\/ERRORCODE>/g' /home/pi/error.html
+        KIOSKURL="file:///home/pi/error.html"
+        chromium-browser --disable-infobars --kiosk "$KIOSKURL"
+        exit 1;
+    fi
+
+    if [ $(($MODE_FIELD + $MODE_PIT + $MODE_INSPECTIONS + $MODE_AUDIANCE)) -gt 1 ]; then
+        echo "ERROR: More than one MODE has been selected! Please verify then reboot."
+        sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>More than one MODE has been selected! Please verify then reboot.<\/ERRORCODE>/g' /home/pi/error.html
+        KIOSKURL="file:///home/pi/error.html"
+        chromium-browser --disable-infobars --kiosk "$KIOSKURL"
+        exit 1;
+    fi
+
+    if [ $MODE_FIELD -eq 1 ] ; then
+
+        if [ $FIELD1 -eq 1 ] ; then
+            FIELDNUMBER=1
+        elif [ $FIELD2 -eq 1 ] ; then
+            FIELDNUMBER=2
+        elif [ $FIELD3 -eq 1 ] ; then
+            FIELDNUMBER=3
+        elif [ $FIELD4 -eq 1 ] ; then
+            FIELDNUMBER=4
+        fi
+
+        # If the field we have selected is higher than the number of fields we have error out!
+        if [ $FIELDNUMBER -gt $numFTCEVENTSERVERFIELDS ] ; then
+            echo "ERROR: The selected FIELD is incorrect! Please verify then reboot."
+            sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>The selected FIELD is incorrect! Please verify then reboot.<\/ERRORCODE>/g' /home/pi/error.html
+            KIOSKURL="file:///home/pi/error.html"
+        elif [ $(($FIELD1 + $FIELD2 + $FIELD3 + $FIELD4)) -gt 1 ]; then
+            # If more than one field is selected: ERROR Out!
+            echo "ERROR: More than one FIELD has been selected! Please verify then reboot."
+            sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>More than one FIELD has been selected! Please verify then reboot.<\/ERRORCODE>/g' /home/pi/error.html
+            KIOSKURL="file:///home/pi/error.html"
+        else
+            KIOSKURL="http://${FTCEVENTSERVER_IP}/event/${FTCEVENTSERVER_EVENTCODE}/display/?type=field&bindToField=${FIELDNUMBER}&scoringBarLocation=bottom&allianceOrientation=standard&liveScores=true&mute=true&muteRandomizationResults=false&fieldStyleTimer=true&overlay=false&overlayColor=%2300FF00&allianceSelectionStyle=classic&awardsStyle=overlay&previewStyle=overlay&randomStyle=overlay&dualDivisionRankingStyle=sideBySide&rankingsFontSize=larger&rankingsShowQR=false&showMeetRankings=false&rankingsAllTeams=true"
+        fi
+    else
+        if [ $MODE_PIT -eq 1 ] ; then
+            KIOSKURL="http://${FTCEVENTSERVER_IP}/event/${FTCEVENTSERVER_EVENTCODE}/display/?type=pit&bindToField=all&scoringBarLocation=bottom&allianceOrientation=standard&liveScores=true&mute=false&muteRandomizationResults=false&fieldStyleTimer=false&overlay=false&overlayColor=%2300FF00&allianceSelectionStyle=classic&awardsStyle=overlay&previewStyle=overlay&randomStyle=overlay&dualDivisionRankingStyle=sideBySide&rankingsFontSize=larger&rankingsShowQR=true&showMeetRankings=false&rankingsAllTeams=true"
+        elif [ $MODE_INSPECTIONS -eq 1 ] ; then
+            KIOSKURL="http://${FTCEVENTSERVER_IP}/event/${FTCEVENTSERVER_EVENTCODE}/status/proj/3/"
+        elif [ $MODE_AUDIANCE -eq 1 ] ; then
+            KIOSKURL="http://${FTCEVENTSERVER_IP}/event/${FTCEVENTSERVER_EVENTCODE}/display/?type=audience&bindToField=all&scoringBarLocation=bottom&allianceOrientation=standard&liveScores=true&mute=true&muteRandomizationResults=false&fieldStyleTimer=false&overlay=false&overlayColor=%2300FF00&allianceSelectionStyle=classic&awardsStyle=overlay&previewStyle=overlay&randomStyle=overlay&dualDivisionRankingStyle=sideBySide&rankingsFontSize=larger&rankingsShowQR=false&showMeetRankings=false&rankingsAllTeams=true"
+        fi
+    fi
+fi
+
+
+#Debugging
+#echo "$(date) : MODE_FIELD = $MODE_FIELD" >> /home/pi/openbox.log
+#echo "$(date) : FIELD1 = $FIELD1" >> /home/pi/openbox.log
+#echo "$(date) : FIELD2 = $FIELD2" >> /home/pi/openbox.log
+#cho "$(date) : FIELD3 = $FIELD3" >> /home/pi/openbox.log
+#echo "$(date) : FIELD4 = $FIELD4" >> /home/pi/openbox.log
+#echo "$(date) : MODE_PIT = $MODE_PIT" >> /home/pi/openbox.log
+#echo "$(date) : MODE_INSPECTIONS = $MODE_INSPECTIONS" >> /home/pi/openbox.log
+#echo "$(date) : MODE_AUDIANCE = $MODE_AUDIANCE" >> /home/pi/openbox.log
+#echo "$(date) : FTCEVENTSERVER_IP = $FTCEVENTSERVER_IP" >> /home/pi/openbox.log
+#echo "$(date) : FTCEVENTSERVER_EVENTCODE = $FTCEVENTSERVER_EVENTCODE" >> /home/pi/openbox.log
+#echo "$(date) : KIOSKURL = $KIOSKURL" >> /home/pi/openbox.log
+
+chromium-browser --disable-infobars --kiosk "$KIOSKURL
