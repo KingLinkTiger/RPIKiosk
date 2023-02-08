@@ -62,7 +62,7 @@ sudo apt-get -y upgrade
 
 #Install all of the needed apps
 #17DEC22 - Added jq requirement
-sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils xinit openbox chromium-browser fbi jq
+sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils xinit openbox chromium-browser fbi jq git
 
 #Configure Openbox autostart
 	#Remove default autostart file
