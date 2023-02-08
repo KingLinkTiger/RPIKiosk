@@ -4,7 +4,6 @@
 SCRIPTFILE="autostart"             # get name of the file (not full path)
 GITPATH="/home/pi/RPIKiosk"
 SCRIPTNAME="autostart"
-ARGS=( "$@" )                                  # fixed to make array of args (see below)
 BRANCH="CHS"
 
 self_update() {
@@ -25,12 +24,7 @@ self_update() {
         #Overwrite error.html in case there was an update
         cp -rf error.html /home/pi/error.html
 
-        echo "Running the new version..."
-        cd -                                   # return to original working dir
-        exec "$SCRIPTNAME" "${ARGS[@]}"
-
-        # Now exit this old instance
-        exit 1
+        reboot #Reboot because we can not exec autostart 
     }
     echo "Already the latest version."
 }
