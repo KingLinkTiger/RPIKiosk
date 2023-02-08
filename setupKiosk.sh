@@ -75,8 +75,15 @@ sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils x
 		sudo mkdir /etc/xdg/openbox
 	fi
 	
-	#Create a new autostart with the information we want
-    sudo wget -O /etc/xdg/openbox/autostart "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/autostart"
+    # Clone the github repository to /home/pi/RPIKiosk
+    git clone -b "CHS" --single-branch "https://github.com/KingLinkTiger/RPIKiosk.git"
+
+    sudo mv -f /home/pi/RPIKiosk/autostart /etc/xdg/openbox/autostart
+	
+    #Create a new autostart with the information we want
+    #sudo wget -O /etc/xdg/openbox/autostart "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/autostart"
+
+
 
 #Remove .bash_profile if it exists
 if [ -f /home/pi/.bash_profile ]; then
@@ -121,7 +128,8 @@ expoprt KIOSKURL=""
 EOF
 
 #Copy the error.html to /home/pi
-sudo wget -O /home/pi/error.html "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/error.html"
+sudo mv -f /home/pi/RPIKiosk/error.html /home/pi/error.html
+#sudo wget -O /home/pi/error.html "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/error.html"
 
 #Set Root's password
 echo -e "$ROOTPASSWORD\n$ROOTPASSWORD" | sudo passwd root
