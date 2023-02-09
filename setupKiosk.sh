@@ -75,6 +75,14 @@ sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils x
 		sudo mkdir /etc/xdg/openbox
 	fi
 	
+
+	#check if git got installed
+	git --version 2>&1 >/dev/null # improvement by tripleee
+	GIT_IS_AVAILABLE=$?
+	if [ $GIT_IS_AVAILABLE -ne 0 ]; then # If not installed reinstall all dependancies
+		sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils xinit openbox chromium-browser fbi jq git
+	fi
+
     # Clone the github repository to /home/pi/RPIKiosk
     git clone -b "CHS" --single-branch "https://github.com/KingLinkTiger/RPIKiosk.git"
 
