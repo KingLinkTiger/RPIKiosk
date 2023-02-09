@@ -41,6 +41,20 @@ layout=us
 timezone='US/Eastern'
 
 #--------------------------------------------
+#Functions
+#--------------------------------------------
+
+apt_wait () {
+	while sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1 ; do
+		sleep 1
+	done
+
+	while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 ; do
+		sleep 1
+	done
+}
+
+#--------------------------------------------
 #SCRIPT BELOW
 #--------------------------------------------
 
@@ -56,13 +70,22 @@ sudo raspi-config nonint do_audio "1"
 #Set output volume to 100%
 amixer set PCM -- 100%
 
+# Update sources.list
+echo "http://mirror.umd.edu/raspbian/raspbian/" | sudo sh -c 'cat > /etc/apt/sources.list'
+
 #Apt-get update and upgrade
 sudo apt-get update
 sudo apt-get -y upgrade
 
+#Wait for apt-get to complete before proceeding. Not doing this has caused apt-get install to just outright not run
+apt_wait
+
 #Install all of the needed apps
 #17DEC22 - Added jq requirement
 sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils xinit openbox chromium-browser fbi jq git
+
+#Wait for apt-get to complete before proceeding.
+apt_wait
 
 #Configure Openbox autostart
 	#Remove default autostart file
@@ -77,13 +100,16 @@ sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils x
 	
 
 	#check if git got installed
-	git --version 2>&1 >/dev/null # improvement by tripleee
+	# Source: https://stackoverflow.com/questions/7292584/how-to-check-if-git-is-installed-from-bashrc
+	git --version 2>&1 >/dev/null
 	GIT_IS_AVAILABLE=$?
 	if [ $GIT_IS_AVAILABLE -ne 0 ]; then # If not installed reinstall all dependancies
 		sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils xinit openbox chromium-browser fbi jq git
+		apt_wait
 	fi
 
     # Clone the github repository to /home/pi/RPIKiosk
+	cd /home/pi
     git clone -b "CHS" --single-branch "https://github.com/KingLinkTiger/RPIKiosk.git"
 
     sudo mv -f /home/pi/RPIKiosk/autostart /etc/xdg/openbox/autostart
