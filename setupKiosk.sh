@@ -1,5 +1,6 @@
 #!/bin/bash
-
+# Version 23.2.6
+# Date: 8 FEB 23
 #
 # How to run: wget -O - "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/setupKiosk.sh" | bash
 # On EN GB Keyboard:
@@ -71,7 +72,7 @@ sudo raspi-config nonint do_audio "1"
 amixer set PCM -- 100%
 
 # Update sources.list
-echo "http://mirror.umd.edu/raspbian/raspbian/" | sudo sh -c 'cat > /etc/apt/sources.list'
+echo "deb http://mirror.umd.edu/raspbian/raspbian/ bullseye main" | sudo sh -c 'cat > /etc/apt/sources.list'
 
 #Apt-get update and upgrade
 sudo apt-get update
