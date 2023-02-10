@@ -1,6 +1,6 @@
 #!/bin/bash
-# Version 23.2.6
-# Date: 8 FEB 23
+# Version 23.2.7
+# Date: 10 FEB 23
 #
 # How to run: wget -O - "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/setupKiosk.sh" | bash
 # On EN GB Keyboard:
@@ -113,7 +113,7 @@ apt_wait
 	cd /home/pi
     git clone -b "CHS" --single-branch "https://github.com/KingLinkTiger/RPIKiosk.git"
 
-    sudo mv -f /home/pi/RPIKiosk/autostart /etc/xdg/openbox/autostart
+    sudo cp -rf /home/pi/RPIKiosk/autostart /etc/xdg/openbox/autostart
 	
     #Create a new autostart with the information we want
     #sudo wget -O /etc/xdg/openbox/autostart "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/autostart"
@@ -156,14 +156,14 @@ fi
         mkdir "/home/pi/.config/openbox"
     fi
 
-cat > /home/pi/.config/openbox/environment << 'EOF'
+cat > /home/pi/.config/openbox/environment << EOF
 export FTCEVENTSERVER_EVENTCODE=""
 export FTCEVENTSERVER_IP="192.168.1.101"
 expoprt KIOSKURL=""
 EOF
 
 #Copy the error.html to /home/pi
-sudo mv -f /home/pi/RPIKiosk/error.html /home/pi/error.html
+sudo cp -rf /home/pi/RPIKiosk/error.html /home/pi/error.html
 #sudo wget -O /home/pi/error.html "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/error.html"
 
 #Set Root's password
