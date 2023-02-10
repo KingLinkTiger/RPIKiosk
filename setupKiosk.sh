@@ -1,5 +1,5 @@
 #!/bin/bash
-# Version 23.2.7
+# Version 23.2.8
 # Date: 10 FEB 23
 #
 # How to run: wget -O - "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/setupKiosk.sh" | bash
