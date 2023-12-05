@@ -1,5 +1,5 @@
 #!/bin/bash
-# Version 23.12.5
+# Version 23.12.5.1
 # Date: 5 DEC 23
 #
 # How to run: wget -O - "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/setupKiosk.sh" | bash
@@ -119,6 +119,9 @@ apt_wait
 	
     #Create a new autostart with the information we want
     #sudo wget -O /etc/xdg/openbox/autostart "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/autostart"
+
+	# 5DEC23 - Run dos2unix on autostart to ensure it is formatted properly for linux
+    sudo dos2unix /etc/xdg/openbox/autostart
 
 
 
