@@ -1,6 +1,6 @@
 #!/bin/bash
-# Version 23.2.8
-# Date: 10 FEB 23
+# Version 23.12.5
+# Date: 5 DEC 23
 #
 # How to run: wget -O - "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/setupKiosk.sh" | bash
 # On EN GB Keyboard:
@@ -202,6 +202,12 @@ fi
 
 #Check if splash image does not exist and download it
 if [ ! -f /opt/splash.jpg ]; then
+	wget $SPLASHIMAGEURL -O /opt/splash.jpg
+fi
+
+#Check if splash image is zero bytes. If so remove it and download again.
+if [ ! -s /opt/splash.jpg ]; then
+	rm /opt/splash.jpg
 	wget $SPLASHIMAGEURL -O /opt/splash.jpg
 fi
 
