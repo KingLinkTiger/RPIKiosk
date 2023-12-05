@@ -1,4 +1,4 @@
-# Version 23.12.5.6
+# Version 23.12.5.7
 # Date: 5 DEC 23
 
 #Source: https://serverfault.com/questions/310098/how-to-add-a-timestamp-to-bash-script-log
@@ -42,8 +42,10 @@ self_update() {
         sudo cp -rf error.html /home/pi/error.html
 
         #Overwrite autostart in case there was an update
+        sudo dos2unix /home/pi/RPIKiosk/autostart
         sudo rm -f /etc/xdg/openbox/autostart
         sudo cp -rf /home/pi/RPIKiosk/autostart /etc/xdg/openbox/autostart
+        sudo dos2unix /etc/xdg/openbox/autostart
 
         echo "Rebooting" | adddate >> /home/pi/RPIKiosk.log
         reboot #Reboot because we can not exec autostart 
