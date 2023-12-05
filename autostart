@@ -1,4 +1,4 @@
-# Version 23.12.5.4
+# Version 23.12.5.5
 # Date: 5 DEC 23
 
 #Source: https://serverfault.com/questions/310098/how-to-add-a-timestamp-to-bash-script-log
@@ -19,6 +19,7 @@ BRANCH="CHS"
 self_update() {
     echo "Running self_update" | adddate >> /home/pi/RPIKiosk.log
     cd "$GITPATH"
+    git branch -u "origin/$BRANCH"
     git fetch
 
     # in the next line
@@ -26,7 +27,7 @@ self_update() {
     # 2. removed grep expression so
     # git-diff will check only script
     # file
-    if [ -n "$(git diff --name-only "origin/$BRANCH" "$SCRIPTFILE")" ] ; then
+    if [[ "git status --branch --porcelain" ]]; then
         echo "Found a new version of me, updating myself..." | adddate >> /home/pi/RPIKiosk.log
 
         #Perform a git hard reset to ignore any local changes
@@ -47,7 +48,7 @@ self_update() {
         echo "Rebooting" | adddate >> /home/pi/RPIKiosk.log
         reboot #Reboot because we can not exec autostart 
     else
-        echo "Already the latest version." | adddate >> /home/pi/RPIKiosk.log
+        echo "No git changes, already the latest version." | adddate >> /home/pi/RPIKiosk.log
     fi
 }
 #endregion
