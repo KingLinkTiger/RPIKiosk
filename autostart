@@ -323,6 +323,9 @@ fi
 #echo "$(date) : FTCEVENTSERVER_EVENTCODE = $FTCEVENTSERVER_EVENTCODE" >> /home/pi/openbox.log
 #echo "$(date) : KIOSKURL = $KIOSKURL" >> /home/pi/openbox.log
 
+#Write raw KIOSKURL to test if adddate is breaking 
+echo "DEBUG: KIOSKURL = $KIOSKURL" >> /home/pi/RPIKiosk.log
+
 echo "DEBUG: KIOSKURL = $KIOSKURL" | adddate >> /home/pi/RPIKiosk.log
 echo "DEBUG: FTCEVENTSERVER_EVENTCODE = $FTCEVENTSERVER_EVENTCODE" | adddate >> /home/pi/RPIKiosk.log
 echo "DEBUG: FTCEVENTSERVER_DIVISION1_EVENTCODE = $FTCEVENTSERVER_DIVISION1_EVENTCODE" | adddate >> /home/pi/RPIKiosk.log
