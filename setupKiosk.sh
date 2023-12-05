@@ -72,6 +72,7 @@ sudo raspi-config nonint do_audio "1"
 amixer set PCM -- 100%
 
 # Update sources.list
+echo "deb http://mirror.umd.edu/raspbian/raspbian/ bookworm main" | sudo sh -c 'cat > /etc/apt/sources.list'
 echo "deb http://mirror.umd.edu/raspbian/raspbian/ bullseye main" | sudo sh -c 'cat > /etc/apt/sources.list'
 
 #Apt-get update and upgrade
