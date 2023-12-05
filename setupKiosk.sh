@@ -32,7 +32,7 @@
 # Reference: https://learn.sparkfun.com/tutorials/raspberry-gpio/gpio-pinout
 
 #Variables
-SPLASHIMAGEURL="https://info.firstinspires.org/hubfs/2023%20Season/2023%20season%20assets/first-energize-assets/firstenergize-wallpaper-desktop-1.png"
+SPLASHIMAGEURL="https://info.firstinspires.org/hubfs/2024%20Season/Season%20Assets/FIRST_IN_SHOW_Wallpaper_Dark.jpg"
 PIPASSWORD=mushroom
 ROOTPASSWORD=mushroom
 
