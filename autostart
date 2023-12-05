@@ -1,4 +1,4 @@
-# Version 23.12.5.3
+# Version 23.12.5.4
 # Date: 5 DEC 23
 
 #Source: https://serverfault.com/questions/310098/how-to-add-a-timestamp-to-bash-script-log
@@ -26,7 +26,7 @@ self_update() {
     # 2. removed grep expression so
     # git-diff will check only script
     # file
-    if [ -n "$(git diff --name-only "origin/$BRANCH" "$SCRIPTFILE")" ] then ;
+    if [ -n "$(git diff --name-only "origin/$BRANCH" "$SCRIPTFILE")" ] ; then
         echo "Found a new version of me, updating myself..." | adddate >> /home/pi/RPIKiosk.log
 
         #Perform a git hard reset to ignore any local changes
