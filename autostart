@@ -1,5 +1,5 @@
-# Version 23.2.8
-# Date: 10 FEB 23
+# Version 23.12.5.1
+# Date: 5 DEC 23
 
 #Source: https://serverfault.com/questions/310098/how-to-add-a-timestamp-to-bash-script-log
 adddate() {
@@ -159,7 +159,7 @@ if [ -z "$FTCEVENTSERVER_EVENTCODE" ] ; then
         # We are most likely a dual division event so process it!
         echo "Found 3 Events. Checking if this is a dual division event." | adddate >> /home/pi/RPIKiosk.log
 
-        FTCEVENTSERVER_DIVISION0_EVENTCODE=$(echo $FTCEVENTSERVER_EVENTS | jq -r ".eventCodes[0]")
+        FTCEVENTSERVER_DIVISION0_EVENTCODE=$(echo $FTCEVENTSERVER_EVENTS | jq -r '.eventCodes[] | select( . |  contains("_0"))')
         echo "First event code is: $FTCEVENTSERVER_DIVISION0_EVENTCODE" | adddate >> /home/pi/RPIKiosk.log
 
         #If the first event code contains an underscore followed by 0 we are dual division
@@ -168,10 +168,10 @@ if [ -z "$FTCEVENTSERVER_EVENTCODE" ] ; then
         #if [ $(echo $tmp_EventCodeZero | grep -q "_0") ]; then
         #if [ $(echo $tmp_EventCodeZero | grep "_0") ] ; then
         #if [[ "$tmp_EventCodeZero" == *"_0"* ]] ; then
-            FTCEVENTSERVER_DIVISION1_EVENTCODE=$(echo $FTCEVENTSERVER_EVENTS | jq -r ".eventCodes[1]")
-            FTCEVENTSERVER_DIVISION2_EVENTCODE=$(echo $FTCEVENTSERVER_EVENTS | jq -r ".eventCodes[2]")
+            FTCEVENTSERVER_DIVISION1_EVENTCODE=$(echo $FTCEVENTSERVER_EVENTS | jq -r '.eventCodes[] | select( . |  contains("_1"))')
+            FTCEVENTSERVER_DIVISION2_EVENTCODE=$(echo $FTCEVENTSERVER_EVENTS | jq -r '.eventCodes[] | select( . |  contains("_2"))')
 
-            echo "System is a dual division event. Found event codes $FTCEVENTSERVER_DIVISION1_EVENTCODE and $FTCEVENTSERVER_DIVISION2_EVENTCODE" | adddate >> /home/pi/RPIKiosk.log
+            echo "System is a dual division event. Found event codes D1# $FTCEVENTSERVER_DIVISION1_EVENTCODE and D2# $FTCEVENTSERVER_DIVISION2_EVENTCODE" | adddate >> /home/pi/RPIKiosk.log
         #else 
         #    KIOSKURL="http://${FTCEVENTSERVER_IP}/"
         #    echo "Failed to find division event codes!" | adddate >> /home/pi/RPIKiosk.log
