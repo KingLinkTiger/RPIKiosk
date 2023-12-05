@@ -72,7 +72,8 @@ sudo raspi-config nonint do_audio "1"
 amixer set PCM -- 100%
 
 # Update sources.list
-echo "deb http://mirror.umd.edu/raspbian/raspbian/ bookworm main" | sudo sh -c 'cat > /etc/apt/sources.list'
+# 5DEC23 - Added bookworm sources however this breaks lots of things right now. Staying on bullseye for now.
+#echo "deb http://mirror.umd.edu/raspbian/raspbian/ bookworm main" | sudo sh -c 'cat > /etc/apt/sources.list'
 echo "deb http://mirror.umd.edu/raspbian/raspbian/ bullseye main" | sudo sh -c 'cat > /etc/apt/sources.list'
 
 #Apt-get update and upgrade
@@ -154,7 +155,8 @@ fi
 	fi
 
     if [ ! -d "/home/pi/.config/openbox" ]; then
-        mkdir "/home/pi/.config/openbox"
+        # 5DEC23 - Fix bug where command would not create parent
+	mkdir -p "/home/pi/.config/openbox"
     fi
 
 cat > /home/pi/.config/openbox/environment << EOF
