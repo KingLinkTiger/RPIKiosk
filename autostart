@@ -1,4 +1,4 @@
-# Version 23.12.5.14
+# Version 23.12.5.15
 # Date: 11 DEC 23
 
 #Source: https://serverfault.com/questions/310098/how-to-add-a-timestamp-to-bash-script-log
@@ -151,7 +151,7 @@ fi
 # Check if the provided FTC Server is online! If not write an error to the screen and exit!
 #If the FTC Event Server IP Contians a Colon we are passing a IP and Port
 port=$(echo $FTCEVENTSERVER_IP | grep -P -o ':\K\d+$')
-if [[ ! -z "$port" ]]; then
+if [ -n "$port" ]; then
     echo "DEBUG: Supplied FTCEVENTSERVER_IP contains a port number so processing appropriately." | adddate >> /home/pi/RPIKiosk.log
 
     hostname=$(echo $FTCEVENTSERVER_IP | cut -d : -f 1)
@@ -314,8 +314,7 @@ if [ -z "$KIOSKURL" ] ; then
     fi
 
     if [ $MODE -eq 1000 ] || [ $MODE -eq 0111 ]; then
-
-        if [ -z $FIELD ] ; then
+        #if [ -z $FIELD ] ; then
             if [ $FIELD -eq 1000 ] ; then
                 FIELDNUMBER=1
             elif [ $FIELD -eq 0100 ] ; then
@@ -325,6 +324,12 @@ if [ -z "$KIOSKURL" ] ; then
             elif [ $FIELD -eq 0001 ] ; then
                 FIELDNUMBER=4
             fi
+        #fi
+
+        if [ -z "$FIELDNUMBER" ] ; then
+            echo "ERROR: FIELDNUMBER is NOT set!" | adddate >> /home/pi/RPIKiosk.log
+        else
+            echo "DEBUG: FIELDNUMBER is set to ${FIELDNUMBER}." | adddate >> /home/pi/RPIKiosk.log
         fi
 
         #Get the number of fields for this event
