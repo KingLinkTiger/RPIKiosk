@@ -150,11 +150,12 @@ fi
 
 # Check if the provided FTC Server is online! If not write an error to the screen and exit!
 #If the FTC Event Server IP Contians a Colon we are passing a IP and Port
-if [ "$FTCEVENTSERVER_IP" == *":"* ]; then
+port=$(echo $FTCEVENTSERVER_IP | grep -P -o ':\K\d+$')
+if [ ! -z "$port" ]; then
     echo "DEBUG: Supplied FTCEVENTSERVER_IP contains a port number so processing appropriately." | adddate >> /home/pi/RPIKiosk.log
 
     hostname=$(echo $FTCEVENTSERVER_IP | cut -d : -f 1)
-    port=$(echo $FTCEVENTSERVER_IP | cut -d : -f 2)
+    #port=$(echo $FTCEVENTSERVER_IP | cut -d : -f 2)
     
     #FTCEVENTSERVER_IP_OBJ=(${FTCEVENTSERVER_IP//;/ })
     #IFS=':' read -r -a arrIN <<< "$FTCEVENTSERVER_IP"
