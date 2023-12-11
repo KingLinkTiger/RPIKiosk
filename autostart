@@ -1,4 +1,4 @@
-# Version 23.12.5.13
+# Version 23.12.5.14
 # Date: 11 DEC 23
 
 #Source: https://serverfault.com/questions/310098/how-to-add-a-timestamp-to-bash-script-log
@@ -165,7 +165,7 @@ if [[ "$FTCEVENTSERVER_IP" == *":"* ]]; then
     # RMW 10DEC23 - Check the specific IP and Port we were provided
     if [ $(nc -z -w3 ${hostnam} ${port}; echo $?) -ne 0 ]; then
         echo "ERROR: FTC Server ${FTCEVENTSERVER_IP} is NOT online! Please check if the IP is correct or if the server is online/accessible." | adddate >> /home/pi/RPIKiosk.log
-        sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>FTC Server '"${FTCEVENTSERVER_IP}"' is NOT online! Please check if the IP is correct or if the server is online\/accessible.<\/ERRORCODE>/g' /home/pi/error.html
+        sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>FTC Server '"${FTCEVENTSERVER_IP}"' with hostname '"${hostname}"' port '"${port}"' is NOT online! Please check if the IP is correct or if the server is online\/accessible.<\/ERRORCODE>/g' /home/pi/error.html
         KIOSKURL="file:///home/pi/error.html"
         chromium-browser --disable-infobars --kiosk "$KIOSKURL"
         exit 1;
