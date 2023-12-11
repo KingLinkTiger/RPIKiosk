@@ -1,4 +1,4 @@
-# Version 23.12.5.11
+# Version 23.12.5.12
 # Date: 11 DEC 23
 
 #Source: https://serverfault.com/questions/310098/how-to-add-a-timestamp-to-bash-script-log
@@ -151,11 +151,19 @@ fi
 # Check if the provided FTC Server is online! If not write an error to the screen and exit!
 #If the FTC Event Server IP Contians a Colon we are passing a IP and Port
 if [[ "$FTCEVENTSERVER_IP" == *":"* ]]; then
-    #FTCEVENTSERVER_IP_OBJ=(${FTCEVENTSERVER_IP//;/ })
-    IFS=':' read -r -a arrIN <<< "$FTCEVENTSERVER_IP"
+    echo "DEBUG: Supplied FTCEVENTSERVER_IP contains a port number so processing appropriately." | adddate >> /home/pi/RPIKiosk.log
+
+    hostname=$(echo $FTCEVENTSERVER_IP | cut -d : -f 1)
+    port=$(echo $FTCEVENTSERVER_IP | cut -d : -f 2)
     
+    #FTCEVENTSERVER_IP_OBJ=(${FTCEVENTSERVER_IP//;/ })
+    #IFS=':' read -r -a arrIN <<< "$FTCEVENTSERVER_IP"
+
+    echo "DEBUG: Supplied FTCEVENTSERVER_IP is ${hostname}." | adddate >> /home/pi/RPIKiosk.log
+    echo "DEBUG: Supplied Port is ${port}." | adddate >> /home/pi/RPIKiosk.log
+
     # RMW 10DEC23 - Check the specific IP and Port we were provided
-    if [ $(nc -z -w3 ${arrIN[0]} ${arrIN[1]}; echo $?) -ne 0 ]; then
+    if [ $(nc -z -w3 ${hostnam} ${port}; echo $?) -ne 0 ]; then
         echo "ERROR: FTC Server ${FTCEVENTSERVER_IP} is NOT online! Please check if the IP is correct or if the server is online/accessible." | adddate >> /home/pi/RPIKiosk.log
         sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>FTC Server '"${FTCEVENTSERVER_IP}"' is NOT online! Please check if the IP is correct or if the server is online\/accessible.<\/ERRORCODE>/g' /home/pi/error.html
         KIOSKURL="file:///home/pi/error.html"
