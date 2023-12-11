@@ -1,5 +1,5 @@
-# Version 23.12.5.8
-# Date: 10 DEC 23
+# Version 23.12.5.9
+# Date: 11 DEC 23
 
 #Source: https://serverfault.com/questions/310098/how-to-add-a-timestamp-to-bash-script-log
 adddate() {
@@ -141,8 +141,6 @@ fi
 # Proceed
 #----------------------------------
 
-: <<'END'
-
 if [ -z "$FTCEVENTSERVER_IP" ] ; then
     FTCEVENTSERVER_IP="192.168.1.101"
 fi
@@ -176,8 +174,6 @@ else
         echo "DEBUG: FTC Server ${FTCEVENTSERVER_IP} is online!" | adddate >> /home/pi/RPIKiosk.log
     fi
 fi
-
-END
 
 if [ -z "$FTCEVENTSERVER_EVENTCODE" ] ; then
     echo "FTCEVENTSERVER_EVENTCODE is not set! Trying to automatically find it" | adddate >> /home/pi/RPIKiosk.log
