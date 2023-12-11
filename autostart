@@ -142,7 +142,10 @@ fi
 #----------------------------------
 
 if [ -z "$FTCEVENTSERVER_IP" ] ; then
+    echo "DEBUG: FTCEVENTSERVER_IP Not set using default of 192.168.1.101!" | adddate >> /home/pi/RPIKiosk.log
     FTCEVENTSERVER_IP="192.168.1.101"
+else
+    echo "DEBUG: FTCEVENTSERVER_IP is set to ${FTCEVENTSERVER_IP}!" | adddate >> /home/pi/RPIKiosk.log
 fi
 
 # Check if the provided FTC Server is online! If not write an error to the screen and exit!
