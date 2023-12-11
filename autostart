@@ -150,7 +150,7 @@ fi
 
 # Check if the provided FTC Server is online! If not write an error to the screen and exit!
 #If the FTC Event Server IP Contians a Colon we are passing a IP and Port
-if [[ "$FTCEVENTSERVER_IP" == *":"* ]]; then
+if [ "$FTCEVENTSERVER_IP" == *":"* ]; then
     echo "DEBUG: Supplied FTCEVENTSERVER_IP contains a port number so processing appropriately." | adddate >> /home/pi/RPIKiosk.log
 
     hostname=$(echo $FTCEVENTSERVER_IP | cut -d : -f 1)
@@ -163,7 +163,7 @@ if [[ "$FTCEVENTSERVER_IP" == *":"* ]]; then
     echo "DEBUG: Supplied Port is ${port}." | adddate >> /home/pi/RPIKiosk.log
 
     # RMW 10DEC23 - Check the specific IP and Port we were provided
-    if [ $(nc -z -w3 ${hostnam} ${port}; echo $?) -ne 0 ]; then
+    if [ $(nc -z -w3 $hostname $port; echo $?) -ne 0 ]; then
         echo "ERROR: FTC Server ${FTCEVENTSERVER_IP} is NOT online! Please check if the IP is correct or if the server is online/accessible." | adddate >> /home/pi/RPIKiosk.log
         sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>FTC Server '"${FTCEVENTSERVER_IP}"' with hostname '"${hostname}"' port '"${port}"' is NOT online! Please check if the IP is correct or if the server is online\/accessible.<\/ERRORCODE>/g' /home/pi/error.html
         KIOSKURL="file:///home/pi/error.html"
@@ -175,7 +175,7 @@ if [[ "$FTCEVENTSERVER_IP" == *":"* ]]; then
 else
     #Otherwise we just have an IP
     # RMW 10DEC23 - Added check for FTCServer on Port 8080 as well since it automatically picks that sometimes.
-    if [ $(nc -z -w3 $FTCEVENTSERVER_IP 80; echo $?) -ne 0 ] || [ $(nc -z -w3 $FTCEVENTSERVER_IP 8080; echo $?) -ne 0 ]; then
+    if [ $(nc -z -w3 $FTCEVENTSERVER_IP 80; echo $?) -ne 0 ]; then
         echo "ERROR: FTC Server ${FTCEVENTSERVER_IP} is NOT online! Please check if the IP is correct or if the server is online/accessible." | adddate >> /home/pi/RPIKiosk.log
         sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>FTC Server '"${FTCEVENTSERVER_IP}"' is NOT online! Please check if the IP is correct or if the server is online\/accessible.<\/ERRORCODE>/g' /home/pi/error.html
         KIOSKURL="file:///home/pi/error.html"
