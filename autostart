@@ -1,4 +1,4 @@
-# Version 23.12.5.15
+# Version 23.12.5.16
 # Date: 11 DEC 23
 
 #Source: https://serverfault.com/questions/310098/how-to-add-a-timestamp-to-bash-script-log
@@ -15,6 +15,8 @@ SCRIPTFILE="autostart"
 GITPATH="/home/pi/RPIKiosk"
 #SCRIPTNAME="autostart"
 BRANCH="CHS"
+
+SPLASHIMAGEURL="https://info.firstinspires.org/hubfs/2024%20Season/Season%20Assets/FIRST_IN_SHOW_Wallpaper_Dark.jpg"
 
 self_update() {
     echo "Running self_update" | adddate >> /home/pi/RPIKiosk.log
@@ -66,6 +68,10 @@ setxkbmap -option terminate:ctrl_alt_bksp
 
 #Start Chromium in kiosk mode
 cat /home/pi/.config/chromium/'Local State' | jq '.user_experience_metrics.stability.exited_cleanly = false' > /home/pi/.config/chromium/tmp_localState && mv /home/pi/.config/chromium/tmp_localState /home/pi/.config/chromium/'Local State'
+
+# 11 DEC 23 RMW - Removing Preferences file
+rm /home/pi/.config/chromium/Default/Preferences
+
 #sed -i 's/"exited_cleanly":false/"exited_cleanly":true' /home/pi/.config/chromium/'Local State'
 #sed -i 's/"exited_cleanly":false/"exited_cleanly":true; s/"exit_type":"[^"]\+"/"exit_type":"Normal"/' ~/.config/chromium/Default/Preferences
 
