@@ -7,7 +7,7 @@
 #	- Right Alt + Shift + ~ Key = |
 #	- Shift + 2 = “
 #
-#	Intall Time: Roughly 22 Minuites
+#	Intall Time: Roughly 22 Minutes
 #
 #
 # Script assumes "pi" account is being used
@@ -33,8 +33,8 @@
 
 #Variables
 SPLASHIMAGEURL="https://info.firstinspires.org/hubfs/2024%20Season/Season%20Assets/FIRST_IN_SHOW_Wallpaper_Dark.jpg"
-PIPASSWORD=mushroom
-ROOTPASSWORD=mushroom
+PIPASSWORD=ftcuser
+ROOTPASSWORD=ftcuser
 
 #Optional Variables
 locale=en_US.UTF-8
