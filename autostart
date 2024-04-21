@@ -1,0 +1,392 @@
+# Version 23.12.5.16
+# Date: 11 DEC 23
+
+#Source: https://serverfault.com/questions/310098/how-to-add-a-timestamp-to-bash-script-log
+adddate() {
+    while IFS= read -r line; do
+        printf '%s %s\n' "$(date)" "$line";
+    done
+}
+
+#region AutoUpdate
+#Source https://stackoverflow.com/questions/59727780/self-updating-bash-script-from-github
+
+SCRIPTFILE="autostart"
+GITPATH="/home/pi/RPIKiosk"
+#SCRIPTNAME="autostart"
+BRANCH="CHS"
+
+SPLASHIMAGEURL="https://info.firstinspires.org/hubfs/2024%20Season/Season%20Assets/FIRST_IN_SHOW_Wallpaper_Dark.jpg"
+
+self_update() {
+    echo "Running self_update" | adddate >> /home/pi/RPIKiosk.log
+    cd "$GITPATH"
+    git branch -u "origin/$BRANCH"
+    git fetch
+
+    # in the next line
+    # 1. added double-quotes (see below)
+    # 2. removed grep expression so
+    # git-diff will check only script
+    # file
+    if [[ $(git status --branch --porcelain --untracked-files=no | wc -l) -gt 0 ]]; then
+        echo "Found a new version of me, updating myself..." | adddate >> /home/pi/RPIKiosk.log
+
+        #Perform a git hard reset to ignore any local changes
+        git reset --hard
+
+        git pull --force
+        #git checkout "$BRANCH"
+        #git pull --force
+
+        #Overwrite error.html in case there was an update
+        sudo rm -f /home/pi/error.html
+        sudo cp -rf error.html /home/pi/error.html
+
+        #Overwrite autostart in case there was an update
+        sudo dos2unix /home/pi/RPIKiosk/autostart
+        sudo rm -f /etc/xdg/openbox/autostart
+        sudo cp -rf /home/pi/RPIKiosk/autostart /etc/xdg/openbox/autostart
+        sudo dos2unix /etc/xdg/openbox/autostart
+
+        echo "Rebooting" | adddate >> /home/pi/RPIKiosk.log
+        reboot #Reboot because we can not exec autostart 
+    else
+        echo "No git changes, already the latest version." | adddate >> /home/pi/RPIKiosk.log
+    fi
+}
+#endregion
+
+#cat <<EOT >>/home/pi/test.txt
+#Disable any form of screen saver / screen blanking / power management
+xset s off
+xset s noblank
+xset -dpms
+
+#Allow quitting the X server which CTRL-ALT-BACKSPACE
+setxkbmap -option terminate:ctrl_alt_bksp
+
+#Start Chromium in kiosk mode
+cat /home/pi/.config/chromium/'Local State' | jq '.user_experience_metrics.stability.exited_cleanly = false' > /home/pi/.config/chromium/tmp_localState && mv /home/pi/.config/chromium/tmp_localState /home/pi/.config/chromium/'Local State'
+
+# 11 DEC 23 RMW - Removing Preferences file
+rm /home/pi/.config/chromium/Default/Preferences
+
+#sed -i 's/"exited_cleanly":false/"exited_cleanly":true' /home/pi/.config/chromium/'Local State'
+#sed -i 's/"exited_cleanly":false/"exited_cleanly":true; s/"exit_type":"[^"]\+"/"exit_type":"Normal"/' ~/.config/chromium/Default/Preferences
+
+# Wait for etho0 or wlan0 to go to upstate for ~50 seconds
+for i in {1..25}
+do
+    if [ "$(cat /sys/class/net/eth0/operstate)" = "up" ] ; then
+            # If eth0 goes up
+            break
+    elif  [ "$(cat /sys/class/net/wlan0/operstate)" = "up" ] ; then
+            # If wlan0 goes up
+            break
+    fi
+
+    # Otherwise sleep
+    echo "[Waiting Adapter] Attempt $i" | adddate >> /home/pi/RPIKiosk.log
+    sleep 2
+
+    if [ $i -ge 25 ] ; then
+        echo "ERROR: System failed to have eth0 or wlan0 go to up state." | adddate >> /home/pi/RPIKiosk.log
+        sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>System failed to have eth0 or wlan0 go to up state. Please check cable and/or WiFi config.<\/ERRORCODE>/g' /home/pi/error.html
+        KIOSKURL="file:///home/pi/error.html"
+        chromium-browser --disable-infobars --kiosk "$KIOSKURL"
+        exit 1;
+    fi
+done
+
+# Wait to receive an IP address for ~50 seconds
+for i in {1..25}
+do
+    if ! [ "$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')" == "" ] ; then
+            # If we have an IP address break
+            break
+    fi
+
+    # Otherwise sleep
+    echo "[Waiting IP] Attempt $i" | adddate >> /home/pi/RPIKiosk.log
+    sleep 2
+
+    if [ $i -ge 25 ] ; then
+        echo "ERROR: Failed to recieve IP address." | adddate >> /home/pi/RPIKiosk.log
+        sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>System failed to receive IP address in reasonable time (~50 seconds).<\/ERRORCODE>/g' /home/pi/error.html
+        KIOSKURL="file:///home/pi/error.html"
+        chromium-browser --disable-infobars --kiosk "$KIOSKURL"
+        exit 1;
+    fi
+done
+
+ipAddr="$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')"
+gatewayAddr="$(route -n | grep 'UG[ \t]' | awk '{print $2}')"
+
+echo "DEBUG ipAddr = $ipAddr" | adddate >> /home/pi/RPIKiosk.log
+echo "DEBUG gatewayAddr = $gatewayAddr" | adddate >> /home/pi/RPIKiosk.log
+
+# Check if we can access out gateway address on port 80
+if [ $(nc -z -w3 $gatewayAddr 80; echo $?) -ne 0 ]; then
+        #If not bail and provide error
+        echo "Unable to connect to gateway!" | adddate >> /home/pi/RPIKiosk.log
+fi
+
+# We have a gateway address and were able to connect to it.
+echo "Able to connect to gateway, proceeding!" | adddate >> /home/pi/RPIKiosk.log
+
+# If we can reach github on port 80
+if [ $(nc -z -w3 github.com 80; echo $?) -eq 0 ]; then
+    #run the Self Update
+    self_update
+else
+    echo "ERROR: Unable to access github.com. Not autoupdating!" | adddate >> /home/pi/RPIKiosk.log
+fi
+
+#----------------------------------
+# Proceed
+#----------------------------------
+
+if [ -z "$FTCEVENTSERVER_IP" ] ; then
+    echo "DEBUG: FTCEVENTSERVER_IP Not set using default of 192.168.1.101!" | adddate >> /home/pi/RPIKiosk.log
+    FTCEVENTSERVER_IP="192.168.1.101"
+else
+    echo "DEBUG: FTCEVENTSERVER_IP is set to ${FTCEVENTSERVER_IP}!" | adddate >> /home/pi/RPIKiosk.log
+fi
+
+# Check if the provided FTC Server is online! If not write an error to the screen and exit!
+#If the FTC Event Server IP Contians a Colon we are passing a IP and Port
+port=$(echo $FTCEVENTSERVER_IP | grep -P -o ':\K\d+$')
+if [ -n "$port" ]; then
+    echo "DEBUG: Supplied FTCEVENTSERVER_IP contains a port number so processing appropriately." | adddate >> /home/pi/RPIKiosk.log
+
+    hostname=$(echo $FTCEVENTSERVER_IP | cut -d : -f 1)
+    #port=$(echo $FTCEVENTSERVER_IP | cut -d : -f 2)
+    
+    #FTCEVENTSERVER_IP_OBJ=(${FTCEVENTSERVER_IP//;/ })
+    #IFS=':' read -r -a arrIN <<< "$FTCEVENTSERVER_IP"
+
+    echo "DEBUG: Supplied FTCEVENTSERVER_IP is ${hostname}." | adddate >> /home/pi/RPIKiosk.log
+    echo "DEBUG: Supplied Port is ${port}." | adddate >> /home/pi/RPIKiosk.log
+
+    # RMW 10DEC23 - Check the specific IP and Port we were provided
+    if [ $(nc -z -w3 $hostname $port; echo $?) -ne 0 ]; then
+        echo "ERROR: FTC Server ${FTCEVENTSERVER_IP} is NOT online! Please check if the IP is correct or if the server is online/accessible." | adddate >> /home/pi/RPIKiosk.log
+        sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>FTC Server '"${FTCEVENTSERVER_IP}"' with hostname '"${hostname}"' port '"${port}"' is NOT online! Please check if the IP is correct or if the server is online\/accessible.<\/ERRORCODE>/g' /home/pi/error.html
+        KIOSKURL="file:///home/pi/error.html"
+        chromium-browser --disable-infobars --kiosk "$KIOSKURL"
+        exit 1;
+    else
+        echo "DEBUG: FTC Server ${FTCEVENTSERVER_IP} is online!" | adddate >> /home/pi/RPIKiosk.log
+    fi
+else
+    #Otherwise we just have an IP
+    # RMW 10DEC23 - Added check for FTCServer on Port 8080 as well since it automatically picks that sometimes.
+    if [ $(nc -z -w3 $FTCEVENTSERVER_IP 80; echo $?) -ne 0 ]; then
+        echo "ERROR: FTC Server ${FTCEVENTSERVER_IP} is NOT online! Please check if the IP is correct or if the server is online/accessible." | adddate >> /home/pi/RPIKiosk.log
+        sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>FTC Server '"${FTCEVENTSERVER_IP}"' is NOT online! Please check if the IP is correct or if the server is online\/accessible.<\/ERRORCODE>/g' /home/pi/error.html
+        KIOSKURL="file:///home/pi/error.html"
+        chromium-browser --disable-infobars --kiosk "$KIOSKURL"
+        exit 1;
+    else
+        echo "DEBUG: FTC Server ${FTCEVENTSERVER_IP} is online!" | adddate >> /home/pi/RPIKiosk.log
+    fi
+fi
+
+if [ -z "$FTCEVENTSERVER_EVENTCODE" ] ; then
+    echo "FTCEVENTSERVER_EVENTCODE is not set! Trying to automatically find it" | adddate >> /home/pi/RPIKiosk.log
+    FTCEVENTSERVER_EVENTS=$(curl -s -L -X GET http://${FTCEVENTSERVER_IP}/api/v1/events)
+
+    numFTCEVENTSERVER_EVENTS=$(echo $FTCEVENTSERVER_EVENTS | jq -r ".eventCodes" | jq length)
+
+    if [ $numFTCEVENTSERVER_EVENTS -eq 1 ] ; then
+        FTCEVENTSERVER_EVENTCODE=$(echo $FTCEVENTSERVER_EVENTS | jq -r ".eventCodes[]")
+        echo "Found event code $FTCEVENTSERVER_EVENTCODE" | adddate >> /home/pi/RPIKiosk.log
+    elif [ $numFTCEVENTSERVER_EVENTS -eq 3 ] ; then 
+        # We are most likely a dual division event so process it!
+        echo "Found 3 Events. Checking if this is a dual division event." | adddate >> /home/pi/RPIKiosk.log
+
+        FTCEVENTSERVER_DIVISION0_EVENTCODE=$(echo $FTCEVENTSERVER_EVENTS | jq -r '.eventCodes[] | select( . |  contains("_0"))')
+        echo "First event code is: $FTCEVENTSERVER_DIVISION0_EVENTCODE" | adddate >> /home/pi/RPIKiosk.log
+
+        #If the first event code contains an underscore followed by 0 we are dual division
+        #if [[ $tmp_EventCodeZero = *"_0"* ]]; then
+        #TODO Better check for dual division event codes
+        #if [ $(echo $tmp_EventCodeZero | grep -q "_0") ]; then
+        #if [ $(echo $tmp_EventCodeZero | grep "_0") ] ; then
+        #if [[ "$tmp_EventCodeZero" == *"_0"* ]] ; then
+            FTCEVENTSERVER_DIVISION1_EVENTCODE=$(echo $FTCEVENTSERVER_EVENTS | jq -r '.eventCodes[] | select( . |  contains("_1"))')
+            FTCEVENTSERVER_DIVISION2_EVENTCODE=$(echo $FTCEVENTSERVER_EVENTS | jq -r '.eventCodes[] | select( . |  contains("_2"))')
+
+            echo "System is a dual division event. Found event codes D1# $FTCEVENTSERVER_DIVISION1_EVENTCODE and D2# $FTCEVENTSERVER_DIVISION2_EVENTCODE" | adddate >> /home/pi/RPIKiosk.log
+        #else 
+        #    KIOSKURL="http://${FTCEVENTSERVER_IP}/"
+        #    echo "Failed to find division event codes!" | adddate >> /home/pi/RPIKiosk.log
+        #fi
+    else 
+        KIOSKURL="http://${FTCEVENTSERVER_IP}/"
+        echo "Failed to find event code!" | adddate >> /home/pi/RPIKiosk.log
+    fi
+else
+    echo "FTCEVENTSERVER_EVENTCODE is already set to: ${$FTCEVENTSERVER_EVENTCODE}" | adddate >> /home/pi/RPIKiosk.log
+fi
+
+if [ -z "$KIOSKURL" ] ; then
+    # Pin Setup
+    # https://learn.sparkfun.com/tutorials/raspberry-gpio/gpio-pinout
+    #
+    # MODE Pins
+    # PIN 32/12 - FIELD Display
+    # PIN 36/16 - PIT DISPLAY
+    # PIN 38/20 - INSPECTIONS DISPLAY
+    # PIN 40/21 - AUDIANCE DISPLAY
+    #
+    # FIELD Pins
+    # PIN 21/6 = FIELD 1
+    # PIN 33/13 = FIELD 2
+    # PIN 35/19 = FIELD 3
+    # PIN 37/26 = FIELD 4
+    #
+
+    raspi-gpio set 12 ip pd
+    raspi-gpio set 16 ip pd
+    raspi-gpio set 20 ip pd
+    raspi-gpio set 21 ip pd
+
+    raspi-gpio set 6 ip pd
+    raspi-gpio set 13 ip pd
+    raspi-gpio set 19 ip pd
+    raspi-gpio set 26 ip pd
+
+    MODE_FIELD=$(raspi-gpio get 12 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    MODE_PIT=$(raspi-gpio get 16 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    MODE_INSPECTIONS=$(raspi-gpio get 20 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    MODE_AUDIANCE=$(raspi-gpio get 21 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+
+    MODE="$MODE_FIELD$MODE_PIT$MODE_INSPECTIONS$MODE_AUDIANCE"
+    #MODE_DEC="$((2#$MODE))"
+
+    FIELD1=$(raspi-gpio get 6 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    FIELD2=$(raspi-gpio get 13 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    FIELD3=$(raspi-gpio get 19 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    FIELD4=$(raspi-gpio get 26 | awk '{ delete vars; for(i = 1; i <= NF; ++i) { n = index($i, "="); if(n) { vars[substr($i, 1, n - 1)] = substr($i, n + 1) } } Var = vars["level"] } { print Var }')
+    
+    FIELD="$FIELD1$FIELD2$FIELD3$FIELD4"
+    #FIELD_DEC="$((2#$FIELD))"
+
+    if [ $(($MODE_FIELD + $MODE_PIT + $MODE_INSPECTIONS + $MODE_AUDIANCE)) -eq 0 ]; then
+        echo "ERROR: No mode selected! Please verify then reboot." | adddate >> /home/pi/RPIKiosk.log
+        sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>No mode selected! Please verify then reboot.<\/ERRORCODE>/g' /home/pi/error.html
+        KIOSKURL="file:///home/pi/error.html"
+        chromium-browser --disable-infobars --kiosk "$KIOSKURL"
+        exit 1;
+    fi
+
+    # Removed because we are now using binary and more than one mode switch will be valid
+    #if [ $(($MODE_FIELD + $MODE_PIT + $MODE_INSPECTIONS + $MODE_AUDIANCE)) -gt 1 ]; then
+    #    echo "ERROR: More than one MODE has been selected! Please verify then reboot." | adddate >> /home/pi/RPIKiosk.log
+    #    sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>More than one MODE has been selected! Please verify then reboot.<\/ERRORCODE>/g' /home/pi/error.html
+    #    KIOSKURL="file:///home/pi/error.html"
+    #    chromium-browser --disable-infobars --kiosk "$KIOSKURL"
+    #    exit 1;
+    #fi
+
+    if [ $MODE -eq 0111 ] || [ $MODE -eq 1011 ] || [ $MODE -eq 1101 ] || [ $MODE -eq 1110 ]; then # If mode is inversed we are in dual division mode
+        if [ $FIELD -eq 0010 ] ; then #Division 1
+            FTCEVENTSERVER_EVENTCODE=$FTCEVENTSERVER_DIVISION1_EVENTCODE
+        elif [ $FIELD -eq 0001 ] ; then #Division 2
+            FTCEVENTSERVER_EVENTCODE=$FTCEVENTSERVER_DIVISION2_EVENTCODE
+        elif [ $FIELD -eq 0011 ] ; then #Division 0
+            FTCEVENTSERVER_EVENTCODE=$FTCEVENTSERVER_DIVISION0_EVENTCODE
+        elif [ $FIELD -eq 1010 ] ; then #Division 1 Field 1
+            FTCEVENTSERVER_EVENTCODE=$FTCEVENTSERVER_DIVISION1_EVENTCODE
+            FIELDNUMBER=1
+        elif [ $FIELD -eq 0110 ] ; then #Division 1 Field 2
+            FTCEVENTSERVER_EVENTCODE=$FTCEVENTSERVER_DIVISION1_EVENTCODE
+            FIELDNUMBER=2
+        elif [ $FIELD -eq 1001 ] ; then #Division 2 Field 1
+            FTCEVENTSERVER_EVENTCODE=$FTCEVENTSERVER_DIVISION2_EVENTCODE
+            FIELDNUMBER=1
+        elif [ $FIELD -eq 0101 ] ; then #Division 2 Field 2
+            FTCEVENTSERVER_EVENTCODE=$FTCEVENTSERVER_DIVISION2_EVENTCODE
+            FIELDNUMBER=2
+        elif [ $FIELD -eq 1011 ] ; then #Division 0 Field 1 - Interdivisional Finals
+            FTCEVENTSERVER_EVENTCODE=$FTCEVENTSERVER_DIVISION0_EVENTCODE
+            FIELDNUMBER=1
+        elif [ $FIELD -eq 0111 ] ; then #Division 0 Field 2 - Interdivisional Finals
+            FTCEVENTSERVER_EVENTCODE=$FTCEVENTSERVER_DIVISION0_EVENTCODE
+            FIELDNUMBER=2
+        fi
+    fi
+
+    if [ $MODE -eq 1000 ] || [ $MODE -eq 0111 ]; then
+        #if [ -z $FIELD ] ; then
+            if [ $FIELD -eq 1000 ] ; then
+                FIELDNUMBER=1
+            elif [ $FIELD -eq 0100 ] ; then
+                FIELDNUMBER=2
+            elif [ $FIELD -eq 0010 ] ; then
+                FIELDNUMBER=3
+            elif [ $FIELD -eq 0001 ] ; then
+                FIELDNUMBER=4
+            fi
+        #fi
+
+        if [ -z "$FIELDNUMBER" ] ; then
+            echo "ERROR: FIELDNUMBER is NOT set!" | adddate >> /home/pi/RPIKiosk.log
+        else
+            echo "DEBUG: FIELDNUMBER is set to ${FIELDNUMBER}." | adddate >> /home/pi/RPIKiosk.log
+        fi
+
+        #Get the number of fields for this event
+        numFTCEVENTSERVERFIELDS=$(curl -s -L -X GET http://${FTCEVENTSERVER_IP}/api/v1/events/${FTCEVENTSERVER_EVENTCODE}/matches/ | jq '([ .[][].field ] | max)')
+
+        # If the field we have selected is higher than the number of fields we have error out!
+        if [ $FIELDNUMBER -gt $numFTCEVENTSERVERFIELDS ] ; then
+            echo "ERROR: The selected FIELD is incorrect! Please verify then reboot." | adddate >> /home/pi/RPIKiosk.log
+            sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>The selected FIELD is incorrect! Please verify then reboot.<\/ERRORCODE>/g' /home/pi/error.html
+            KIOSKURL="file:///home/pi/error.html"
+        #elif [ $(($FIELD1 + $FIELD2 + $FIELD3 + $FIELD4)) -gt 1 ]; then
+        #    # If more than one field is selected: ERROR Out!
+        #    echo "ERROR: More than one FIELD has been selected! Please verify then reboot." | adddate >> /home/pi/RPIKiosk.log
+        #    sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>More than one FIELD has been selected! Please verify then reboot.<\/ERRORCODE>/g' /home/pi/error.html
+        #    KIOSKURL="file:///home/pi/error.html"
+        else
+            KIOSKURL="http://${FTCEVENTSERVER_IP}/event/${FTCEVENTSERVER_EVENTCODE}/display/?type=field&bindToField=${FIELDNUMBER}&scoringBarLocation=bottom&allianceOrientation=standard&liveScores=true&mute=true&muteRandomizationResults=false&fieldStyleTimer=true&overlay=false&overlayColor=%2300FF00&allianceSelectionStyle=classic&awardsStyle=overlay&previewStyle=overlay&randomStyle=overlay&dualDivisionRankingStyle=sideBySide&rankingsFontSize=larger&rankingsShowQR=false&showMeetRankings=false&rankingsAllTeams=true"
+        fi
+    elif [ $MODE -eq 0100 ] || [ $MODE -eq 1011 ]; then # Pit Display
+            KIOSKURL="http://${FTCEVENTSERVER_IP}/event/${FTCEVENTSERVER_EVENTCODE}/display/?type=pit&bindToField=all&scoringBarLocation=bottom&allianceOrientation=standard&liveScores=true&mute=false&muteRandomizationResults=false&fieldStyleTimer=false&overlay=false&overlayColor=%2300FF00&allianceSelectionStyle=classic&awardsStyle=overlay&previewStyle=overlay&randomStyle=overlay&dualDivisionRankingStyle=sideBySide&rankingsFontSize=larger&rankingsShowQR=true&showMeetRankings=false&rankingsAllTeams=true"
+    elif [ $MODE -eq 0010 ] || [ $MODE -eq 1101 ] ; then # Inspection Display
+        KIOSKURL="http://${FTCEVENTSERVER_IP}/event/${FTCEVENTSERVER_EVENTCODE}/status/proj/3/"
+    elif [ $MODE -eq 0001 ] || [ $MODE -eq 1110 ] ; then # Audiance Display
+        KIOSKURL="http://${FTCEVENTSERVER_IP}/event/${FTCEVENTSERVER_EVENTCODE}/display/?type=audience&bindToField=all&scoringBarLocation=bottom&allianceOrientation=standard&liveScores=true&mute=true&muteRandomizationResults=false&fieldStyleTimer=false&overlay=false&overlayColor=%2300FF00&allianceSelectionStyle=classic&awardsStyle=overlay&previewStyle=overlay&randomStyle=overlay&dualDivisionRankingStyle=sideBySide&rankingsFontSize=larger&rankingsShowQR=false&showMeetRankings=false&rankingsAllTeams=true"
+    fi
+fi
+
+
+#Debugging
+#echo "$(date) : MODE_FIELD = $MODE_FIELD" >> /home/pi/openbox.log
+#echo "$(date) : FIELD1 = $FIELD1" >> /home/pi/openbox.log
+#echo "$(date) : FIELD2 = $FIELD2" >> /home/pi/openbox.log
+#cho "$(date) : FIELD3 = $FIELD3" >> /home/pi/openbox.log
+#echo "$(date) : FIELD4 = $FIELD4" >> /home/pi/openbox.log
+#echo "$(date) : MODE_PIT = $MODE_PIT" >> /home/pi/openbox.log
+#echo "$(date) : MODE_INSPECTIONS = $MODE_INSPECTIONS" >> /home/pi/openbox.log
+#echo "$(date) : MODE_AUDIANCE = $MODE_AUDIANCE" >> /home/pi/openbox.log
+#echo "$(date) : FTCEVENTSERVER_IP = $FTCEVENTSERVER_IP" >> /home/pi/openbox.log
+#echo "$(date) : FTCEVENTSERVER_EVENTCODE = $FTCEVENTSERVER_EVENTCODE" >> /home/pi/openbox.log
+#echo "$(date) : KIOSKURL = $KIOSKURL" >> /home/pi/openbox.log
+
+#Write raw KIOSKURL to test if adddate is breaking 
+echo "DEBUG: KIOSKURL = $KIOSKURL" >> /home/pi/RPIKiosk.log
+
+echo "DEBUG: KIOSKURL = $KIOSKURL" | adddate >> /home/pi/RPIKiosk.log
+echo "DEBUG: FTCEVENTSERVER_EVENTCODE = $FTCEVENTSERVER_EVENTCODE" | adddate >> /home/pi/RPIKiosk.log
+echo "DEBUG: FTCEVENTSERVER_DIVISION1_EVENTCODE = $FTCEVENTSERVER_DIVISION1_EVENTCODE" | adddate >> /home/pi/RPIKiosk.log
+echo "DEBUG: FTCEVENTSERVER_DIVISION2_EVENTCODE = $FTCEVENTSERVER_DIVISION2_EVENTCODE" | adddate >> /home/pi/RPIKiosk.log
+echo "DEBUG: MODE = $MODE" | adddate >> /home/pi/RPIKiosk.log
+echo "DEBUG: FIELD = $FIELD" | adddate >> /home/pi/RPIKiosk.log
+
+
+
+chromium-browser --disable-infobars --kiosk "$KIOSKURL"
