@@ -6,15 +6,14 @@
 #	- Right Alt + Shift + ~ Key = |
 #	- Shift + 2 = “
 #
-#	Intall Time: Roughly 22 Minuites
+#	Intall Time: Roughly 22 Minutes
 #
 
 
 #Variables
 SPLASHIMAGEURL="https://www.firstinspires.org/sites/default/files/uploads/resource_library/brand/first-rise/wallpaper/FIRST-RISE-wallpaper-night-programs-desktop.jpg"
-PIPASSWORD=MDFTC
-ROOTPASSWORD=MDFTC
-
+PIPASSWORD=ftcuser
+ROOTPASSWORD=ftcuser
 KIOSKURL="http://192.168.1.25/login"
 
 #Optional Variables
