@@ -1,5 +1,5 @@
-# Version 23.12.5.16
-# Date: 11 DEC 23
+# Version 25.01.15.1
+# Date: 15 JAN 25
 
 #Source: https://serverfault.com/questions/310098/how-to-add-a-timestamp-to-bash-script-log
 adddate() {
@@ -14,7 +14,7 @@ adddate() {
 SCRIPTFILE="autostart"
 GITPATH="/home/pi/RPIKiosk"
 #SCRIPTNAME="autostart"
-BRANCH="CHS"
+BRANCH="master"
 
 SPLASHIMAGEURL="https://info.firstinspires.org/hubfs/2024%20Season/Season%20Assets/FIRST_IN_SHOW_Wallpaper_Dark.jpg"
 
@@ -99,26 +99,37 @@ do
     fi
 done
 
-# Wait to receive an IP address for ~50 seconds
-for i in {1..25}
-do
-    if ! [ "$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')" == "" ] ; then
-            # If we have an IP address break
-            break
-    fi
 
-    # Otherwise sleep
-    echo "[Waiting IP] Attempt $i" | adddate >> /home/pi/RPIKiosk.log
-    sleep 2
+# Set the network interface to check (e.g., eth0, wlan0)
+INTERFACE="eth0"
+# Set the timeout in seconds
+TIMEOUT=60
+# Initialize the elapsed time
+elapsed=0
 
-    if [ $i -ge 25 ] ; then
+# Function to check if the interface has an IP address
+check_ip() {
+    ip addr show "$INTERFACE" | grep 'inet ' | awk '{print $2}' | cut -d/ -f1
+}
+
+# Wait for the IP address or timeout
+while [ -z "$(check_ip)" ]; do
+    if [ "$elapsed" -ge "$TIMEOUT" ]; then
         echo "ERROR: Failed to recieve IP address." | adddate >> /home/pi/RPIKiosk.log
         sed -i -e 's/\(<ERRORCODE>\).*\(<\/ERRORCODE>\)/<ERRORCODE>System failed to receive IP address in reasonable time (~50 seconds).<\/ERRORCODE>/g' /home/pi/error.html
         KIOSKURL="file:///home/pi/error.html"
         chromium-browser --disable-infobars --kiosk "$KIOSKURL"
         exit 1;
     fi
+
+    echo "[Waiting IP] Attempt $i on $INTERFACE" | adddate >> /home/pi/RPIKiosk.log
+    sleep 1
+    elapsed=$((elapsed + 1))
 done
+
+# Proceed with the rest of the script
+echo "IP address assigned: $(check_ip)"
+echo "Continuing with the script..."
 
 ipAddr="$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')"
 gatewayAddr="$(route -n | grep 'UG[ \t]' | awk '{print $2}')"
@@ -147,9 +158,51 @@ fi
 # Proceed
 #----------------------------------
 
+echo "DEBUG: Checking if FTCEVENTSERVER_IP is set." | adddate >> /home/pi/RPIKiosk.log
+
+if [ -n "${FTCEVENTSERVER_IP}" ]; then
+    unset FTCEVENTSERVER_IP
+fi
+
 if [ -z "$FTCEVENTSERVER_IP" ] ; then
-    echo "DEBUG: FTCEVENTSERVER_IP Not set using default of 192.168.1.101!" | adddate >> /home/pi/RPIKiosk.log
-    FTCEVENTSERVER_IP="192.168.1.101"
+    echo "DEBUG: FTCEVENTSERVER_IP is not set. Trying to find the server automatically using nmap." | adddate >> /home/pi/RPIKiosk.log
+   
+    #15JAN25 - Added code to try to automatically find server using nmap
+
+    # Get IP and netmask from ifconfig
+    # Make sure to EXCLUDE the loopback address!
+    IP_NETMASK=$(ifconfig | grep -A1 "inet " | grep -v "inet6" | grep -v "127.0.0.1" | awk '{print $2, $4}' | cut -d ':' -f2 | head -n 1)
+
+    # Split IP and netmask
+    IP=$(echo $IP_NETMASK | cut -d' ' -f1)
+    NETMASK=$(echo $IP_NETMASK | cut -d' ' -f2)
+
+    # Combine IP and CIDR
+    #echo "${IP}/${CIDR}"
+    echo "DEBUG: System IP and CIDR block is ${IP}/${CIDR} ." | adddate >> /home/pi/RPIKiosk.log
+
+    NETWORK=$(ipcalc -n "${IP}/${CIDR}" | awk '/Network/ {print $2}')
+    echo "DEBUG: Network is ${NETWORK}." | adddate >> /home/pi/RPIKiosk.log
+   
+    echo "DEBUG: Performing nmap scan of subnet to find possible servers." | adddate >> /home/pi/RPIKiosk.log
+    #Perform an nmap scan of the local subnet and find systems with port 80 open
+    for ip in $(nmap -n -T4 -p 80 --open "${NETWORK}" -oG - | awk '/open/{print $2}'); do
+        echo "DEBUG: Checking IP: ${ip}" | adddate >> /home/pi/RPIKiosk.log
+        
+        #Iterate through all systems with port 80 open to try and find the FTCEVENTSERVER_IP
+        status_code=$(curl --silent --output /dev/null --write-out "%{http_code}" "http://${ip}/resources/")
+        if [ "$status_code" -eq 200 ]; then
+            #We found an FTC Event Server. So use it's IP going forward
+            echo "DEBUG: Automatically found FTC Event Server at ${ip}!" | adddate >> /home/pi/RPIKiosk.log
+            FTCEVENTSERVER_IP=$ip
+        fi
+    done
+
+    #If we are unable to find one continue with default
+    if [ -z "$FTCEVENTSERVER_IP" ] ; then
+        echo "DEBUG: FTCEVENTSERVER_IP Not set using default of 192.168.1.101!" | adddate >> /home/pi/RPIKiosk.log
+        FTCEVENTSERVER_IP="192.168.1.101"
+    fi
 else
     echo "DEBUG: FTCEVENTSERVER_IP is set to ${FTCEVENTSERVER_IP}!" | adddate >> /home/pi/RPIKiosk.log
 fi

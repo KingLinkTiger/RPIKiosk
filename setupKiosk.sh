@@ -1,8 +1,8 @@
 #!/bin/bash
-# Version 23.12.5.2
-# Date: 5 DEC 23
+# Version 25.01.15.1
+# Date: 15 JAN 25
 #
-# How to run: wget -O - "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/CHS/setupKiosk.sh" | bash
+# How to run: wget -O - "https://raw.githubusercontent.com/KingLinkTiger/RPIKiosk/master/setupKiosk.sh" | bash
 # On EN GB Keyboard:
 #	- Right Alt + Shift + ~ Key = |
 #	- Shift + 2 = “
@@ -32,7 +32,7 @@
 # Reference: https://learn.sparkfun.com/tutorials/raspberry-gpio/gpio-pinout
 
 #Variables
-SPLASHIMAGEURL="https://info.firstinspires.org/hubfs/2024%20Season/Season%20Assets/FIRST_IN_SHOW_Wallpaper_Dark.jpg"
+SPLASHIMAGEURL="https://info.firstinspires.org/hubfs/first_dive_wallpaper_4k_dark%20(1).png"
 PIPASSWORD=ftcuser
 ROOTPASSWORD=ftcuser
 
@@ -76,6 +76,11 @@ amixer set PCM -- 100%
 #echo "deb http://mirror.umd.edu/raspbian/raspbian/ bookworm main" | sudo sh -c 'cat > /etc/apt/sources.list'
 echo "deb http://mirror.umd.edu/raspbian/raspbian/ bullseye main" | sudo sh -c 'cat > /etc/apt/sources.list'
 
+#15JAN25 - Add missing gpg key
+#15JAN25 - This is needed to support bookworm. Which we are not doing yet.
+#sudo gpg --keyserver keyserver.ubuntu.com --recv-keys 9165938D90FDDD2E
+#sudo gpg --export 9165938D90FDDD2E | sudo tee /etc/apt/trusted.gpg.d/raspbian.gpg > /dev/null
+
 #Apt-get update and upgrade
 sudo apt-get update
 sudo apt-get -y upgrade
@@ -85,7 +90,8 @@ apt_wait
 
 #Install all of the needed apps
 #17DEC22 - Added jq requirement
-sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils xinit openbox chromium-browser fbi jq git
+#15JAN25 - Added nmap requirement
+sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils xinit openbox chromium-browser fbi jq git nmap ipcalc
 
 #Wait for apt-get to complete before proceeding.
 apt_wait
@@ -107,13 +113,13 @@ apt_wait
 	git --version 2>&1 >/dev/null
 	GIT_IS_AVAILABLE=$?
 	if [ $GIT_IS_AVAILABLE -ne 0 ]; then # If not installed reinstall all dependancies
-		sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils xinit openbox chromium-browser fbi jq git
+		sudo apt-get -y install --no-install-recommends xserver-xorg x11-xserver-utils xinit openbox chromium-browser fbi jq git nmap ipcalc
 		apt_wait
 	fi
 
     # Clone the github repository to /home/pi/RPIKiosk
 	cd /home/pi
-    git clone -b "CHS" --single-branch "https://github.com/KingLinkTiger/RPIKiosk.git"
+    git clone -b "master" --single-branch "https://github.com/KingLinkTiger/RPIKiosk.git"
 
     sudo cp -rf /home/pi/RPIKiosk/autostart /etc/xdg/openbox/autostart
 	
@@ -205,13 +211,13 @@ fi
 
 #Check if splash image does not exist and download it
 if [ ! -f /opt/splash.jpg ]; then
-	wget $SPLASHIMAGEURL -O /opt/splash.jpg
+	wget "$SPLASHIMAGEURL" -O /opt/splash.jpg
 fi
 
 #Check if splash image is zero bytes. If so remove it and download again.
 if [ ! -s /opt/splash.jpg ]; then
 	rm /opt/splash.jpg
-	wget $SPLASHIMAGEURL -O /opt/splash.jpg
+	wget "$SPLASHIMAGEURL" -O /opt/splash.jpg
 fi
 
 #Enable the splash screen service
